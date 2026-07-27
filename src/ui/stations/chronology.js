@@ -65,7 +65,7 @@ function radiocarbonSection(samples) {
     const question = el('div', { class: 'questionBlock' },
       el('p', { class: 'promptLine' }, 'Do you carry this result into the report as reliable?'));
     const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-    const choices = el('div', { class: 'choiceRow' });
+    const choices = el('div', { class: 'choiceRow', role: 'group', 'aria-label': `${result.contextLabel}: carry this radiocarbon result into the report as reliable?` });
     [
       { id: 'reliable', label: 'Reliable' },
       { id: 'unreliable', label: 'Set aside as unreliable' }
@@ -157,7 +157,7 @@ function methodSection(samples, typology, strat) {
     const answered = state.dating.methodSort[line.id];
     const rowFeedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
     const row = el('div', { class: 'questionBlock' }, el('p', { class: 'promptLine' }, line.label));
-    const choices = el('div', { class: 'choiceRow' });
+    const choices = el('div', { class: 'choiceRow', role: 'group', 'aria-label': `${line.label}: absolute or relative dating method?` });
     METHOD_CLASSIFICATION.options.forEach((opt) => {
       const selected = answered && answered.classification === opt.id;
       const btn = el('button', {
@@ -210,7 +210,7 @@ function conclusionBlock(question) {
   const wrap = el('div', { class: 'questionBlock' }, el('p', { class: 'promptLine' }, question.prompt));
   const stored = state.dating.conclusions[question.id];
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': question.prompt });
 
   const options = question.options.filter((opt) => optionAvailable(opt));
 

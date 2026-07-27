@@ -30,6 +30,7 @@ export function createInitialState() {
       textScale: 1,
       highContrast: false,
       muted: false,
+      guidedMode: false,
       xr: { snapAngle: 30, locomotion: 'teleport', vignette: true }
     },
     progress: { onboarded: false, briefed: false, station: 1, visitedStations: [] },

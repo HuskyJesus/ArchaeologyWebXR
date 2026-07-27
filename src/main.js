@@ -37,7 +37,7 @@ import { initEvidenceRoom, openEvidenceRoom } from './ui/stations/evidenceRoom.j
 import { initReport, showResults } from './ui/stations/report.js';
 import { initNotebook, openNotebook } from './ui/notebook.js';
 import { initSettings, openSettings, applyInterfaceSettings } from './ui/settings.js';
-import { startFallback, initFallbackControls, isFallbackActive } from './ui/fallback.js';
+import { startFallback, stopFallback, initFallbackControls, isFallbackActive } from './ui/fallback.js';
 
 import { initXR, isPresenting, updateXR, invalidateXRPanel, probeXRSupport } from './xr/session.js';
 
@@ -67,6 +67,7 @@ function boot() {
   wireGate();
   wireShortcuts();
   on(EVENTS.settingsChanged, applyInterfaceSettings);
+  on(EVENTS.settingsChanged, reconcileMode);
   on(EVENTS.stateChanged, onStateChanged);
   exposeDebugHook();
   // Report headset availability on the start gate. The XR rig itself is only
@@ -116,7 +117,6 @@ function applyStoredSettings() {
 /* ---------- start gate ---------- */
 
 function wireGate() {
-  const gate = byId('startGate');
   const nameInput = byId('studentName');
   const resumeCard = byId('resumeCard');
 
@@ -137,10 +137,11 @@ function wireGate() {
       const loaded = loadSave();
       if (!loaded) {
         toast('That saved investigation could not be read. Starting a new one.', 'warn');
-        beginSession(nameInput.value.trim() || 'Student', false);
+        beginSession(nameInput.value.trim() || 'Student', false, null);
         return;
       }
-      beginSession(loaded.studentName || 'Student', true);
+      // Resume in whichever mode the saved preference asks for.
+      beginSession(loaded.studentName || 'Student', true, null);
     });
   } else if (summary && summary.corrupt) {
     resumeCard.style.display = 'block';
@@ -148,26 +149,21 @@ function wireGate() {
     byId('resumeBtn').disabled = true;
   }
 
-  byId('startBtn').addEventListener('click', () => {
+  const startNew = (mode) => {
+    const name = nameInput.value.trim() || 'Student';
     if (hasSave()) {
-      confirmDiscard(() => {
-        clearSave();
-        beginSession(nameInput.value.trim() || 'Student', false);
-      });
+      confirmDiscard(() => { clearSave(); beginSession(name, false, mode); });
       return;
     }
-    beginSession(nameInput.value.trim() || 'Student', false);
-  });
+    beginSession(name, false, mode);
+  };
 
+  byId('startBtn').addEventListener('click', () => startNew('3d'));
+  byId('gateFallbackBtn').addEventListener('click', () => startNew('guided'));
   nameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') byId('startBtn').click();
   });
-
   byId('gateSettingsBtn').addEventListener('click', openSettings);
-  byId('gateFallbackBtn').addEventListener('click', () => {
-    byId('startGate').style.display = 'none';
-    beginFallbackSession(nameInput.value.trim() || 'Student', 'You chose guided access mode. Every activity is available here.');
-  });
 }
 
 function confirmDiscard(onConfirm) {
@@ -188,16 +184,20 @@ function confirmDiscard(onConfirm) {
   modal.open({ id: 'confirmOverlay', dismissible: true });
 }
 
-function beginSession(name, resumed) {
-  byId('startGate').style.display = 'none';
+/* Mode: '3d' or 'guided'. The two modes share one investigation state, so a
+   learner can move between them at any time — from the start gate or from
+   Settings — without losing progress. Guided Accessible Mode is a full,
+   equivalent experience, not a reduced one, and is also the automatic fallback
+   when WebGL cannot start. */
+let scene3DReady = false;
+let currentMode = null;
 
+/* Builds the WebGL scene once, lazily, so a learner who never leaves guided
+   mode never pays for a 3D context. Returns false if WebGL is unavailable. */
+function ensure3DReady() {
+  if (scene3DReady) return true;
   const ok = initRenderer(document.body);
-  if (!ok || !webglAvailable) {
-    beginFallbackSession(name, 'This device could not start WebGL, so the investigation is running in guided access mode. Nothing in the learning activities is missing.');
-    return;
-  }
-
-  state.studentName = name;
+  if (!ok || !webglAvailable) return false;
   buildWorld();
   buildUnitMarkers();
   buildSurveyMarkers();
@@ -205,42 +205,91 @@ function beginSession(name, resumed) {
   initPlayer(onCanvasSelect);
   initHUD();
   initAmbience();
-  enableAutosave();
   applyToCamera();
+  initXR().catch(() => {});
+  scene3DReady = true;
+  return true;
+}
 
+function enter3DMode() {
+  currentMode = '3d';
+  stopFallback();
+  const canvas = byId('sceneCanvas');
+  if (canvas) canvas.style.display = 'block';
   byId('hud').style.display = 'flex';
   byId('reticle').style.display = 'block';
   byId('sceneChrome').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  startLoop();
+  refreshHUD();
+}
 
-  initXR().catch(() => {});
+function enterGuidedMode(reason) {
+  currentMode = 'guided';
+  running = false;
+  if (renderer) renderer.setAnimationLoop(null);
+  const canvas = byId('sceneCanvas');
+  if (canvas) canvas.style.display = 'none';
+  byId('reticle').style.display = 'none';
+  byId('sceneChrome').style.display = 'none';
+  byId('interactPrompt').style.display = 'none';
+  startFallback(reason);
+}
+
+function beginSession(name, resumed, mode) {
+  byId('startGate').style.display = 'none';
+  state.studentName = name;
+  enableAutosave();
 
   if (resumed) {
     resumeSession();
     record('session', 'resumed', { station: state.progress.station });
-    toast('Investigation resumed.', 'info');
-    startLoop();
-    refreshHUD();
-    showBriefing('Back on site', resumeMessage());
   } else {
     startSession(name);
     addNote(`Investigation started by ${name}.`);
-    startLoop();
-    refreshHUD();
+  }
+
+  const wantGuided = mode === 'guided' || (mode == null && !!state.settings.guidedMode);
+  let guided = wantGuided;
+  if (!wantGuided) {
+    if (ensure3DReady()) enter3DMode();
+    else guided = true; // WebGL unavailable: fall back to the guided experience.
+  }
+  if (guided) {
+    enterGuidedMode(mode == null && !webglAvailable && !scene3DReady
+      ? 'This device could not start WebGL, so the investigation is running in Guided Accessible Mode. Nothing in the learning activities is missing.'
+      : 'Guided Accessible Mode. Every activity, decision, record and report here is identical to the 3D version.');
+  }
+  setSetting('guidedMode', guided);
+
+  if (resumed) {
+    toast('Investigation resumed.', 'info');
+    showBriefing('Back on site', resumeMessage());
+  } else {
     showBriefing('Field briefing', OPENING_BRIEFING, () => {
-      if (!state.progress.onboarded) showOnboarding();
-      else openEquipment();
+      if (!guided && !state.progress.onboarded) showOnboarding();
+      else if (!state.equipment.prepared) openEquipment();
     });
   }
 }
 
-function beginFallbackSession(name, reason) {
-  state.studentName = name;
-  enableAutosave();
-  startFallback(reason);
-  if (hasSave()) resumeSession(); else startSession(name);
-  showBriefing('Field briefing', OPENING_BRIEFING, () => {
-    if (!state.equipment.prepared) openEquipment();
-  });
+/* Keeps the live experience in step with the guidedMode setting, so toggling
+   it in Settings switches modes immediately without losing any progress. */
+function reconcileMode() {
+  if (!currentMode) return;
+  const wantGuided = !!state.settings.guidedMode;
+  if (wantGuided && currentMode !== 'guided') {
+    enterGuidedMode('Guided Accessible Mode. Every activity, decision, record and report here is identical to the 3D version.');
+    toast('Guided Accessible Mode is on. Your progress is unchanged.', 'info');
+  } else if (!wantGuided && currentMode !== '3d') {
+    if (ensure3DReady()) {
+      enter3DMode();
+      toast('3D view is on. Your progress is unchanged.', 'info');
+    } else {
+      toast('This device cannot start the 3D view, so Guided Accessible Mode stays on.', 'warn');
+      setSetting('guidedMode', true);
+    }
+  }
 }
 
 function resumeMessage() {
@@ -279,6 +328,7 @@ function buildHelpPanel() {
   HELP_TEXT.forEach((line) => list.appendChild(el('li', {}, line)));
   host.appendChild(list);
   byId('helpBtn').addEventListener('click', () => modal.open({ id: 'helpOverlay', dismissible: true }));
+  byId('fallbackHelpBtn').addEventListener('click', () => modal.open({ id: 'helpOverlay', dismissible: true }));
   byId('closeHelpBtn').addEventListener('click', () => modal.close('helpOverlay'));
 }
 

@@ -147,7 +147,7 @@ function fieldBlock(def, field, spec) {
     ` ${field.prompt}`));
 
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': field.prompt });
   const multi = !!spec.multi;
   const current = draft[field.id];
 
@@ -209,7 +209,7 @@ function renderStatus() {
   clear(host);
   const missing = missingFields();
   if (missing.length) {
-    host.appendChild(el('div', { class: 'noticeBox' }, `Still to record: ${missing.join(', ')}.`));
+    host.appendChild(el('div', { class: 'noticeBox', role: 'status', 'aria-live': 'polite' }, `Still to record: ${missing.join(', ')}.`));
   }
   host.appendChild(actionRow(
     button('File this analysis', () => save(missing), missing.length ? 'secondary' : 'primary'),

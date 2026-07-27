@@ -90,6 +90,43 @@ function renderMap(host) {
   }
   host.appendChild(el('p', { class: 'mapLegend' },
     'Filled squares: excavation units opened. Circles: recorded surface finds. Triangles: recorded in-place evidence. Crosses: recorded modern debris. The datum is marked at the centre of the grid.'));
+
+  // Text equivalent of the map, so the same spatial information is available
+  // without seeing the drawing (SC 1.1.1). Positions are given as compass
+  // bearings and distances from the site datum.
+  host.appendChild(sectionHeading('Map as a location list',
+    'The same layout described in words, measured from the site datum. North is toward the river and eroding bluff.'));
+  const list = el('ul', { class: 'mapTextList' });
+  Object.values(UNITS).forEach((unit) => {
+    const opened = state.units.opened.includes(unit.id);
+    list.appendChild(el('li', {}, `${unit.label}: ${describeLocation(unit.x, unit.z)}. ${opened ? 'Opened for excavation.' : 'Staked but not opened.'}`));
+  });
+  const recorded = state.survey.mapped
+    .map((id) => surveyItemFor(id))
+    .filter(Boolean);
+  list.appendChild(el('li', {},
+    recorded.length
+      ? `Recorded surface finds (${recorded.length}): ${recorded.map((i) => `${i.name} ${describeLocation(SURVEY_POSITIONS[i.id][0], SURVEY_POSITIONS[i.id][1])}`).join('; ')}.`
+      : 'No surface finds have been recorded onto the map yet.'));
+  LOCATIONS.filter((l) => ['camp', 'lab', 'evidence', 'synthesis', 'dating', 'screen'].includes(l.id))
+    .forEach((loc) => list.appendChild(el('li', {}, `${loc.label}: ${describeLocation(loc.x, loc.z)}.`)));
+  host.appendChild(list);
+}
+
+function surveyItemFor(id) {
+  return SURVEY_ITEMS.find((i) => i.id === id) || null;
+}
+
+/* A plain-language bearing and distance from the site datum, used to give the
+   maps and profiles a text equivalent. */
+function describeLocation(x, z) {
+  const dx = x - SITE.datum.x;
+  const dz = z - SITE.datum.z;
+  if (Math.hypot(dx, dz) < 2) return 'at the site datum';
+  const ns = Math.abs(dz) < 2 ? '' : (dz < 0 ? 'north' : 'south');
+  const ew = Math.abs(dx) < 2 ? '' : (dx < 0 ? 'west' : 'east');
+  const dir = `${ns}${ns && ew ? '-' : ''}${ew}`;
+  return `about ${Math.round(Math.hypot(dx, dz))} metres ${dir} of the datum`;
 }
 
 function drawSiteMap(canvas) {
@@ -253,6 +290,14 @@ function renderProfiles(host) {
     const canvas = el('canvas', { width: 560, height: 240, class: 'profileCanvas', 'aria-label': `Stratigraphic profile of ${unitLabel(unitId)}` });
     host.appendChild(canvas);
     drawProfile(canvas, unitId, levels, done);
+    // Text equivalent of the drawn profile, surface downward (SC 1.1.1).
+    host.appendChild(el('p', { class: 'subtle' }, 'Profile as text, from the surface downward:'));
+    const strata = el('ol', { class: 'mapTextList' });
+    levels.forEach((level, i) => {
+      strata.appendChild(el('li', {},
+        `Level ${level.level} (${level.depthLabel}): ${level.soil.name}.${i < done ? '' : ' Not excavated.'}`));
+    });
+    host.appendChild(strata);
     if (done < levels.length) {
       host.appendChild(el('p', { class: 'subtle' },
         `Only ${done} of ${levels.length} levels were excavated, so this profile is incomplete below that depth.`));

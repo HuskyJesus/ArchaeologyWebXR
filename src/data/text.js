@@ -131,5 +131,7 @@ export const HELP_TEXT = [
   'Open the objective task directly: the button at the lower left.',
   'Notebook: N. Evidence Room: V. Settings: comma. Report: P.',
   'Escape closes an optional panel, then releases the mouse cursor.',
-  'On a touch screen, use the left stick to move, drag the right of the screen to look, and tap Interact.'
+  'On a touch screen, use the left stick to move, drag the right of the screen to look, and tap Interact.',
+  'Guided Accessible Mode: turn it on in Settings for a full keyboard and screen-reader version with no 3D graphics. Every activity, decision and record is identical, and you can switch modes at any time without losing progress.',
+  'In virtual reality: the trigger selects what the ray points at, push the right stick left or right to snap-turn, push it forward and release to teleport, and the menu on your left wrist opens the objective, notebook, evidence and settings. Smooth movement is off by default and can be turned on in Settings.'
 ];

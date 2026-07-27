@@ -60,12 +60,13 @@ function questionBlock(q, evidence) {
   wrap.appendChild(el('label', { class: 'fieldLabel', for: `report-claim-${q.id}` }, 'Conclusion'));
   wrap.appendChild(claim);
 
-  wrap.appendChild(el('div', { class: 'fieldLabel' }, `Evidence cited (at least ${q.minEvidence})`));
+  const evidenceLabelId = `report-evidence-label-${q.id}`;
+  wrap.appendChild(el('div', { class: 'fieldLabel', id: evidenceLabelId }, `Evidence cited (at least ${q.minEvidence})`));
   if (!evidence.length) {
     wrap.appendChild(emptyState('No citable evidence exists.'));
   } else {
     const chosen = new Set(stored.evidence || []);
-    const list = el('div', { class: 'evidencePicker' });
+    const list = el('div', { class: 'evidencePicker', role: 'group', 'aria-labelledby': evidenceLabelId });
     evidence.forEach((e) => {
       const input = el('input', { type: 'checkbox', id: `report-${q.id}-${e.id}` });
       input.checked = chosen.has(e.id);
@@ -116,6 +117,7 @@ function openFieldBlock(f) {
   const area = el('textarea', { class: 'textInput', id: `report-open-${f.id}`, rows: '4' });
   area.value = state.report.open[f.id] || '';
   area.addEventListener('input', () => setReportOpen(f.id, area.value));
+  wrap.appendChild(el('label', { class: 'fieldLabel', for: `report-open-${f.id}` }, 'Your response'));
   wrap.appendChild(area);
   return wrap;
 }
@@ -125,15 +127,14 @@ function onSubmit() {
   const errorHost = document.getElementById('reportErrors');
   clear(errorHost);
   if (problems.length) {
+    errorHost.setAttribute('tabindex', '-1');
     errorHost.appendChild(el('div', { class: 'errorText', role: 'alert' },
-      el('div', {}, 'The report is not ready to submit:'),
+      el('h3', {}, 'The report is not ready to submit'),
+      el('p', {}, 'Please resolve the following, then submit again. Nothing you have written has been cleared.'),
       el('ul', {}, ...problems.map((p) => el('li', {}, p)))));
-    const first = problems[0].match(/Question (\d+)/);
-    if (first) {
-      const q = REPORT_QUESTIONS.find((x) => String(x.number) === first[1]);
-      const target = q ? document.getElementById(`report-claim-${q.id}`) : null;
-      if (target) target.focus();
-    }
+    // Move focus to the error summary so a keyboard or screen-reader user is
+    // taken straight to what needs fixing (SC 3.3.1, 2.4.3).
+    errorHost.focus();
     return;
   }
   submitReport();
@@ -196,7 +197,8 @@ function renderResults() {
   host.appendChild(profileList);
 
   host.appendChild(sectionHeading('Written report', null));
-  const pre = el('pre', { class: 'reportText', id: 'reportTextBox' });
+  // tabindex makes the scrollable text keyboard-reachable (SC 2.1.1).
+  const pre = el('pre', { class: 'reportText', id: 'reportTextBox', tabindex: '0', role: 'region', 'aria-label': 'Full written report text' });
   pre.textContent = buildReportText();
   host.appendChild(pre);
 }

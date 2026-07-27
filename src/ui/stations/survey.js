@@ -46,13 +46,15 @@ function renderItem(item) {
   }
 
   classHost.appendChild(el('p', { class: 'promptLine' }, 'Classify this object. What is it, and what kind of evidence is it?'));
+  const classGroup = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'Classify this surface object' });
   SURVEY_CLASSES.forEach((cls) => {
     const btn = el('button', { type: 'button', class: 'choiceBtn wide' },
       el('span', { class: 'choiceMain' }, cls.label),
       el('span', { class: 'choiceHint' }, cls.hint));
     btn.addEventListener('click', () => classify(item, cls.id));
-    classHost.appendChild(btn);
+    classGroup.appendChild(btn);
   });
+  classHost.appendChild(classGroup);
 }
 
 function classify(item, classification) {
@@ -95,7 +97,7 @@ function renderRecordingSection(item, rec, host) {
     return;
   }
 
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'How will you record this object’s position on the site map?' });
   RECORDING_METHODS.forEach((method) => {
     const available = !method.requires || hasCapability(method.requires);
     const btn = el('button', { type: 'button', class: `choiceBtn wide${available ? '' : ' unavailable'}` },
@@ -188,7 +190,7 @@ function concentrationBlock(question) {
   const wrap = el('div', { class: 'questionBlock' }, el('p', { class: 'promptLine' }, question.prompt));
   const answered = state.survey.concentration[question.id];
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': question.prompt });
   question.options.forEach((opt) => {
     const chosen = answered && answered.optionId === opt.id;
     const btn = el('button', {
@@ -226,7 +228,7 @@ function unitRecommendationBlock() {
     return wrap;
   }
 
-  const list = el('div', { class: 'choiceStack' });
+  const list = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'Recommend an excavation unit to open' });
   availableUnits().forEach(({ unit, unlocked, reason }) => {
     const btn = el('button', { type: 'button', class: `choiceBtn wide${unlocked ? '' : ' unavailable'}` },
       el('span', { class: 'choiceMain' }, unit.label),

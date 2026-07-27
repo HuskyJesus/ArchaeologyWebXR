@@ -49,7 +49,13 @@ export function initRenderer(container) {
   renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.id = 'sceneCanvas';
-  renderer.domElement.setAttribute('aria-hidden', 'true');
+  /* The canvas is a visual enhancement, not the only way to act. Describe it
+     for assistive technology and point to the equivalent controls, rather than
+     hiding it entirely, so a screen-reader user understands what the visual
+     view is and how to reach the same actions without it. */
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label',
+    'Three-dimensional view of the Redstone Bluff excavation site. This is a visual enhancement. Every object, activity, decision and piece of evidence is also available from the on-screen tools, the Current objective button, the field notebook, and Guided Accessible Mode.');
   (container || document.body).appendChild(renderer.domElement);
 
   const dome = new THREE.Mesh(

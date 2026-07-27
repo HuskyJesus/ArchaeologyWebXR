@@ -100,7 +100,7 @@ function observationBlock(featureId, fieldId, field) {
   const rec = featureRecord(featureId);
   const wrap = el('div', { class: 'questionBlock' }, el('p', { class: 'promptLine' }, field.prompt));
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': field.prompt });
   const current = rec.observations[fieldId];
 
   if (field.multi) {
@@ -227,7 +227,7 @@ function interpretationBlock(featureId, def) {
   }
 
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const primary = el('div', { class: 'choiceStack' });
+  const primary = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'Primary interpretation of this feature' });
   wrap.appendChild(el('p', { class: 'promptLine' }, 'Primary interpretation'));
   def.interpretations.forEach((interp) => {
     const selected = rec.interpretation === interp.id;
@@ -252,7 +252,7 @@ function interpretationBlock(featureId, def) {
 
   if (rec.interpretation) {
     wrap.appendChild(el('p', { class: 'promptLine' }, 'Alternative interpretation you cannot yet rule out'));
-    const altHost = el('div', { class: 'choiceStack' });
+    const altHost = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'Alternative interpretation you cannot yet rule out' });
     def.interpretations.filter((i) => i.id !== rec.interpretation).forEach((interp) => {
       const selected = rec.alternative === interp.id;
       const btn = el('button', {
@@ -305,7 +305,7 @@ function statusBlock(featureId, def) {
   const missing = completeness(featureId);
   const wrap = el('div', { class: 'questionBlock', id: 'featureStatusBlock' });
   if (missing.length) {
-    wrap.appendChild(el('div', { class: 'noticeBox' }, `Still to do: ${missing.join('; ')}.`));
+    wrap.appendChild(el('div', { class: 'noticeBox', role: 'status', 'aria-live': 'polite' }, `Still to do: ${missing.join('; ')}.`));
   } else {
     wrap.appendChild(el('div', { class: 'recordCard tone-good' },
       el('div', { class: 'recordCardTitle' }, 'Record complete'),

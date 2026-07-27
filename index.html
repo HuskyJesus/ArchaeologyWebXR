@@ -25,9 +25,9 @@
 <a class="skipLink" href="#startGate">Skip to the start of the investigation</a>
 
 <!-- Start gate -->
-<div id="startGate" class="gate">
+<div id="startGate" class="gate" role="region" aria-labelledby="gateHeading">
   <div class="gateCard">
-    <h1>Redstone Bluff Archaeological Investigation</h1>
+    <h1 id="gateHeading">Redstone Bluff Archaeological Investigation</h1>
     <p>Erosion along the Redstone River has exposed artifacts in the bluff face. A highway expansion gives your team three weeks to investigate before construction begins. You are the field archaeologist.</p>
 
     <div id="resumeCard" class="resumeCard" style="display:none;">
@@ -39,13 +39,17 @@
     <label class="fieldLabel" for="studentName">Your name</label>
     <input type="text" id="studentName" maxlength="60" autocomplete="off" placeholder="Enter your name">
 
-    <div class="actionRow">
-      <button type="button" class="btn primary" id="startBtn">Start a new investigation</button>
-      <button type="button" class="btn secondary" id="gateSettingsBtn">Settings and accessibility</button>
-    </div>
+    <fieldset class="modeChoice">
+      <legend>Choose how to explore</legend>
+      <div class="actionRow">
+        <button type="button" class="btn primary" id="startBtn">Explore in 3D</button>
+        <button type="button" class="btn primary" id="gateFallbackBtn">Use Guided Accessible Mode</button>
+      </div>
+      <p class="subtle">Guided Accessible Mode presents the whole investigation as headings, lists and forms with full keyboard and screen-reader support and no 3D graphics. Both modes cover exactly the same activities, decisions, evidence and final report. You can switch between them at any time from Settings without losing progress.</p>
+    </fieldset>
 
-    <div class="gateFooter">
-      <button type="button" class="btn ghost" id="gateFallbackBtn">Use guided access mode (no 3D)</button>
+    <div class="actionRow">
+      <button type="button" class="btn secondary" id="gateSettingsBtn">Settings and accessibility</button>
     </div>
     <p class="subtle" id="xrNote">Checking for an immersive VR device.</p>
     <p class="subtle" id="storageNote">Your work saves automatically in this browser. You can close the tab and resume later.</p>
@@ -54,7 +58,7 @@
 
 <!-- Heads-up display -->
 <div id="hud" style="display:none;">
-  <div class="hudPanel" id="progressPanel">
+  <div class="hudPanel" id="progressPanel" role="region" aria-label="Investigation status and objective">
     <div id="stationBanner">Station 1: Preparing for the Field</div>
     <div class="hudRow"><span>Project days left</span><b id="daysValue">21</b></div>
     <div class="daysBar" aria-hidden="true"><div id="daysBarFill" class="daysBarFill"></div></div>
@@ -65,22 +69,22 @@
       <div id="objectiveDetail" class="subtle"></div>
     </div>
   </div>
-  <div class="hudTools">
+  <nav class="hudTools" aria-label="Investigation tools">
     <button type="button" class="iconBtn" id="notebookBtn" aria-label="Open the field notebook (N)" title="Field notebook (N)">Notebook</button>
     <button type="button" class="iconBtn" id="evidenceBtn" aria-label="Open the Evidence Room (V)" title="Evidence Room (V)">Evidence</button>
     <button type="button" class="iconBtn" id="reportBtn" aria-label="Open the investigation report (P)" title="Investigation report (P)">Report</button>
     <button type="button" class="iconBtn" id="settingsBtn" aria-label="Open settings (comma)" title="Settings">Settings</button>
     <button type="button" class="iconBtn" id="helpBtn" aria-label="Show the controls (question mark)" title="Controls">Controls</button>
     <button type="button" class="iconBtn vr" id="enterVrBtn" style="display:none;" aria-label="Enter or leave virtual reality" title="Enter or leave VR">Enter VR</button>
-  </div>
+  </nav>
 </div>
 
-<div id="sceneChrome" style="display:none;">
+<div id="sceneChrome" style="display:none;" role="region" aria-label="Site view and current objective">
   <div id="miniMapWrap">
     <div class="miniMapLabel"><span>Site map</span><span>North is up</span></div>
-    <canvas id="miniMap" width="200" height="200" aria-label="Minimap of the site showing your position, the stations and recorded finds"></canvas>
+    <canvas id="miniMap" width="200" height="200" role="img" aria-label="Decorative overview map of the site. The same information is available as text in the field notebook and the Evidence Room."></canvas>
   </div>
-  <div id="viewControls">
+  <div id="viewControls" role="group" aria-label="Camera view controls (3D only)">
     <button type="button" class="iconBtn small" id="turnLeftBtn" aria-label="Turn left">Turn left</button>
     <button type="button" class="iconBtn small" id="faceObjectiveBtn" aria-label="Face the current objective (R)">Face objective</button>
     <button type="button" class="iconBtn small" id="turnRightBtn" aria-label="Turn right">Turn right</button>
@@ -105,12 +109,13 @@
   <header class="fallbackHeader">
     <h1>Redstone Bluff Archaeological Investigation</h1>
     <p id="fallbackReason" class="subtle"></p>
-    <div class="actionRow">
+    <nav class="actionRow" aria-label="Guided mode tools">
       <button type="button" class="btn primary" id="fallbackObjectiveBtn">Current objective</button>
       <button type="button" class="btn secondary" id="fallbackNotebookBtn">Field notebook</button>
       <button type="button" class="btn secondary" id="fallbackEvidenceBtn">Evidence Room</button>
       <button type="button" class="btn secondary" id="fallbackSettingsBtn">Settings</button>
-    </div>
+      <button type="button" class="btn secondary" id="fallbackHelpBtn">Controls and help</button>
+    </nav>
   </header>
   <main id="fallbackBody"></main>
 </div>
@@ -302,7 +307,7 @@
   <div class="panelCard">
     <h2>Copy this text</h2>
     <p class="promptDetail">Your browser blocked direct clipboard access. Select all of the text below and copy it.</p>
-    <textarea id="copyFallbackText" class="textInput" rows="14" readonly></textarea>
+    <textarea id="copyFallbackText" class="textInput" rows="14" readonly aria-label="Text to copy"></textarea>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeCopyFallbackBtn">Close</button></div>
   </div>
 </div>

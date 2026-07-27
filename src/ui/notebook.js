@@ -143,7 +143,7 @@ function renderNotes(host) {
     host.appendChild(emptyState('No notes yet. Notes are written automatically as you work.'));
     return;
   }
-  const list = el('div', { class: 'noteList' });
+  const list = el('div', { class: 'noteList', tabindex: '0', role: 'group', 'aria-label': 'Field notes, newest first' });
   [...state.notes].reverse().forEach((n) => list.appendChild(el('div', { class: 'noteLine' }, n.text)));
   host.appendChild(list);
 }

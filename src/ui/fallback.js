@@ -23,30 +23,45 @@ import { openEvidenceRoom } from './stations/evidenceRoom.js';
 import { button, actionRow, sectionHeading, progressLine } from './components.js';
 
 let active = false;
+let wired = false;
 
 export function isFallbackActive() {
   return active;
 }
 
+/* Shows the guided shell and starts keeping it in sync. Safe to call more than
+   once: the button listeners and the state subscription are wired a single
+   time, so switching in and out of guided mode never stacks duplicates. */
 export function startFallback(reason) {
   active = true;
   document.body.classList.add('fallbackMode');
-  const shell = byId('fallbackShell');
-  shell.style.display = 'block';
+  byId('fallbackShell').style.display = 'block';
   byId('hud').style.display = 'none';
   byId('touchControls').style.display = 'none';
   byId('reticle').style.display = 'none';
   byId('interactPrompt').style.display = 'none';
-  const reasonEl = byId('fallbackReason');
-  if (reasonEl) reasonEl.textContent = reason;
+  if (reason !== undefined && reason !== null) {
+    const reasonEl = byId('fallbackReason');
+    if (reasonEl) reasonEl.textContent = reason;
+  }
 
-  byId('fallbackNotebookBtn').addEventListener('click', () => openNotebook());
-  byId('fallbackEvidenceBtn').addEventListener('click', () => openEvidenceRoom());
-  byId('fallbackSettingsBtn').addEventListener('click', () => openSettings());
-  byId('fallbackObjectiveBtn').addEventListener('click', () => runObjectiveAction());
-
-  on(EVENTS.stateChanged, render);
+  if (!wired) {
+    wired = true;
+    byId('fallbackNotebookBtn').addEventListener('click', () => openNotebook());
+    byId('fallbackEvidenceBtn').addEventListener('click', () => openEvidenceRoom());
+    byId('fallbackSettingsBtn').addEventListener('click', () => openSettings());
+    byId('fallbackObjectiveBtn').addEventListener('click', () => runObjectiveAction());
+    on(EVENTS.stateChanged, render);
+  }
   render();
+}
+
+/* Hides the guided shell so the 3D view can take over. The state subscription
+   stays registered but render() is a no-op while inactive. */
+export function stopFallback() {
+  active = false;
+  document.body.classList.remove('fallbackMode');
+  byId('fallbackShell').style.display = 'none';
 }
 
 function render() {

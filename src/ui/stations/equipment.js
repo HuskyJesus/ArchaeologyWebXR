@@ -64,7 +64,7 @@ function showJustification(item) {
   const data = EQUIPMENT_JUSTIFY[item.id];
   clear(box);
   box.appendChild(el('div', { class: 'justifyPrompt' }, `${item.label}: ${data.prompt}`));
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': `${item.label}: ${data.prompt}` });
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
   data.choices.forEach((choice) => {
     const btn = el('button', { type: 'button', class: 'choiceBtn wide' }, choice.text);

@@ -19,6 +19,15 @@ function render() {
   const host = byId('settingsBody');
   clear(host);
 
+  host.appendChild(sectionHeading('Accessibility',
+    'Saved in this browser and applied every visit. Your operating-system reduced-motion preference is respected automatically.'));
+  host.appendChild(toggle('Guided Accessible Mode (no 3D graphics; full keyboard and screen-reader support)',
+    state.settings.guidedMode, (v) => setSetting('guidedMode', v)));
+  host.appendChild(el('p', { class: 'subtle' },
+    'Guided Accessible Mode and the 3D view share the same investigation, so switching keeps all of your progress. The reduced motion, high contrast, camera and text-size options below apply to whichever mode you use.'));
+  host.appendChild(actionRow(
+    button('Reset accessibility preferences', resetAccessibility, 'secondary')));
+
   host.appendChild(sectionHeading('Display', null));
   host.appendChild(segment('Visual quality', [
     { id: 'low', label: 'Low' },
@@ -128,6 +137,22 @@ function confirmReset() {
     }),
     button('Keep my investigation', () => modal.close('confirmOverlay'), 'secondary')));
   modal.open({ id: 'confirmOverlay', dismissible: true });
+}
+
+/* Returns the accessibility and comfort preferences to their defaults while
+   still honouring the operating-system reduced-motion request. Does not touch
+   the investigation itself. */
+function resetAccessibility() {
+  setSetting('textScale', 1);
+  setSetting('highContrast', false);
+  setSetting('cameraBob', true);
+  setSetting('reducedMotion', prefersReducedMotion());
+  setSetting('guidedMode', false);
+  setSetting('quality', 'standard');
+  saveSettings(state.settings);
+  applyInterfaceSettings();
+  render();
+  toast('Accessibility preferences reset to their defaults.', 'info');
 }
 
 function hardReset() {

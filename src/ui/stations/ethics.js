@@ -46,7 +46,7 @@ function render() {
 
   const decision = state.ethics.decisions[scenario.id];
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack' });
+  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': 'Choose the most professional response' });
 
   scenario.choices.forEach((choice) => {
     const selected = decision && decision.choiceId === choice.id;
