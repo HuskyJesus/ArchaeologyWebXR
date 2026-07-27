@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Redstone Bluff Archaeological Investigation</title>
+<style>
+  :root{
+    --hud-bg: rgba(22,24,20,0.90);
+    --hud-border: rgba(255,255,255,0.14);
+    --accent: #c98a4a;
+    --accent-2: #6fa889;
+    --danger: #c9614f;
+    --info: #6fa8c9;
+    --text: #f0ede2;
+    --text-dim: #c3bdaa;
+    --panel-radius: 14px;
+  }
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#141812;
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif; color:var(--text);}
+  canvas{display:block;touch-action:none;}
+  *:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  #loading{position:fixed;inset:0;background:#141812;color:var(--text);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:100;transition:opacity .6s ease;}
+  #loading h1{font-size:1.4rem;font-weight:600;margin-bottom:.4rem;}
+  #loading p{color:var(--text-dim);font-size:.9rem;}
+  .spinner{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,0.15);
+    border-top-color:var(--accent);animation:spin 1s linear infinite;margin-bottom:18px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .spinner{animation-duration:2.4s;} }
+
+  #noWebGL{position:fixed;inset:0;background:#141812;color:var(--text);z-index:99;display:none;padding:30px;overflow:auto;font-size:.95rem;line-height:1.6;}
+  #noWebGL h2{color:var(--accent);}
+
+  #nameGate{position:fixed;inset:0;background:rgba(8,9,7,0.94);z-index:90;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px;}
+  .card{background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:var(--panel-radius);padding:28px 30px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .card h2{margin:0 0 6px;font-size:1.25rem;}
+  .card p{color:var(--text-dim);font-size:.88rem;line-height:1.55;margin:0 0 16px;}
+  .card input[type=text]{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid var(--hud-border);
+    background:rgba(255,255,255,0.06);color:var(--text);font-size:.95rem;margin-bottom:14px;}
+  label{display:block;font-size:.76rem;color:var(--text-dim);margin:10px 0 5px;text-transform:uppercase;letter-spacing:.04em;}
+  .btn{display:inline-block;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;background:var(--accent);
+    color:#231303;font-weight:600;font-size:.9rem;transition:transform .12s ease, filter .12s ease;}
+  .btn:hover{filter:brightness(1.08);} .btn:active{transform:scale(.97);}
+  .btn.secondary{background:rgba(255,255,255,0.1);color:var(--text);}
+  .btn.full{width:100%;} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .segRow{display:flex;gap:6px;margin-bottom:6px;}
+  .segBtn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--hud-border);background:rgba(255,255,255,0.05);color:var(--text-dim);font-size:.8rem;cursor:pointer;}
+  .segBtn.active{background:var(--accent);color:#231303;border-color:var(--accent);font-weight:600;}
+  .rangeRow{display:flex;align-items:center;gap:8px;} .rangeRow input[type=range]{flex:1;}
+  .rangeRow span{font-size:.76rem;color:var(--text-dim);min-width:38px;text-align:right;}
+
+  #hud{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;z-index:20;pointer-events:none;font-size:.82rem;}
+  #hud > *{pointer-events:auto;}
+  #progressPanel{background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:var(--panel-radius);padding:10px 14px;min-width:220px;}
+  #progressPanel .row{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-dim);}
+  #progressPanel .row b{color:var(--text);}
+  #stationBanner{font-size:.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  #topRight{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:280px;}
+  .iconBtn{background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;width:40px;height:40px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;font-family:inherit;color:var(--text);padding:0;}
+  .iconBtn:hover{filter:brightness(1.15);}
+
+  #crosshair{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;
+    background:rgba(255,255,255,0.75);z-index:15;pointer-events:none;transition:transform .1s ease, background .1s ease;}
+  #crosshair.focused{background:var(--accent);transform:scale(1.8);}
+  #interactPrompt{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:var(--hud-bg);border:1px solid var(--hud-border);
+    padding:8px 16px;border-radius:20px;font-size:.85rem;z-index:18;display:none;pointer-events:none;text-align:center;}
+  #controlsHint{position:fixed;bottom:14px;left:14px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;
+    padding:10px 12px;font-size:.74rem;color:var(--text-dim);z-index:18;max-width:300px;line-height:1.45;}
+  #objectiveAction{position:fixed;left:14px;bottom:92px;z-index:22;display:none;max-width:310px;text-align:left;}
+  #onboardingOverlay .panelCard{max-width:560px;}
+  .stepList{display:grid;gap:10px;margin:14px 0;}
+  .stepItem{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;padding:10px;border:1px solid var(--hud-border);border-radius:10px;background:rgba(255,255,255,.04);}
+  .stepNum{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#231303;font-weight:700;}
+  .surveyGuideFlag{position:fixed;right:14px;bottom:14px;z-index:18;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;padding:8px 12px;font-size:.75rem;color:var(--text-dim);display:none;}
+  #miniMapWrap{position:fixed;right:14px;top:72px;z-index:19;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:12px;padding:7px;display:none;}
+  #miniMap{display:block;width:170px;height:170px;border-radius:8px;background:#77765a;}
+  #miniMapLabel{font-size:.68rem;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between;gap:8px;}
+  #viewControls{position:fixed;right:14px;bottom:64px;z-index:22;display:none;gap:6px;}
+  #viewControls .iconBtn{width:auto;min-width:42px;padding:0 10px;font-size:.78rem;}
+  #contextInstruction{margin-top:7px;padding-top:7px;border-top:1px solid var(--hud-border);font-size:.72rem;color:var(--text-dim);line-height:1.35;max-width:270px;}
+  #surveyInspectCanvas{width:100%;height:210px;display:block;border:1px solid var(--hud-border);border-radius:10px;background:#d8d0b8;margin:8px 0 12px;}
+  .objectivePulse{animation:objectivePulse 1.2s ease-in-out infinite;}
+  @keyframes objectivePulse{50%{filter:brightness(1.25);transform:scale(1.03);}}
+  @media (prefers-reduced-motion: reduce){.objectivePulse{animation:none;}}
+  @media (max-width:720px){#miniMapWrap{top:auto;right:10px;bottom:230px}#miniMap{width:130px;height:130px}#viewControls{right:10px;bottom:150px}}
+
+  .panelOverlay{position:fixed;inset:0;background:rgba(6,7,5,0.90);z-index:80;display:none;align-items:center;justify-content:center;padding:20px;overflow:auto;}
+  .panelOverlay.open{display:flex;}
+  .panelCard{background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:var(--panel-radius);padding:26px 28px;
+    max-width:640px;width:100%;max-height:88vh;overflow:auto;}
+  .panelCard h2{margin-top:0;} .panelCard h3{font-size:.9rem;color:var(--accent-2);margin:16px 0 8px;}
+  .panelCard p{color:var(--text-dim);line-height:1.55;font-size:.88rem;}
+  .itemGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:10px 0;}
+  .itemCard{border:1px solid var(--hud-border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;background:rgba(255,255,255,0.04);font-size:.78rem;}
+  .itemCard .ic{font-size:1.4rem;display:block;margin-bottom:4px;}
+  .itemCard.selected{background:rgba(201,138,74,0.25);border-color:var(--accent);}
+  .justifyBox{margin-top:10px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:.82rem;}
+  .justifyChoices{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .justifyChoices button{text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--hud-border);background:rgba(255,255,255,0.05);color:var(--text);font-size:.8rem;cursor:pointer;}
+  .justifyChoices button.correctChoice{background:rgba(111,168,137,0.25);border-color:var(--accent-2);}
+  .justifyChoices button.wrongChoice{background:rgba(201,97,79,0.2);border-color:var(--danger);}
+  .evList{display:flex;flex-direction:column;gap:6px;margin:10px 0;}
+  .evRow{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:.82rem;}
+  .flagPill{font-size:.66rem;padding:2px 8px;border-radius:10px;text-transform:uppercase;font-weight:700;}
+  .flagPill.good{background:rgba(111,168,137,0.25);color:var(--accent-2);}
+  .flagPill.warn{background:rgba(201,138,74,0.25);color:var(--accent);}
+  .flagPill.bad{background:rgba(201,97,79,0.25);color:var(--danger);}
+  .confRow{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;}
+  .confBtn{padding:6px 12px;border-radius:8px;border:1px solid var(--hud-border);background:rgba(255,255,255,0.05);color:var(--text-dim);font-size:.78rem;cursor:pointer;}
+  .confBtn.active{background:var(--info);color:#0a1a22;border-color:var(--info);}
+  textarea.notebookInput{width:100%;min-height:70px;background:rgba(0,0,0,0.3);border:1px solid var(--hud-border);border-radius:8px;color:var(--text);padding:8px;font-family:inherit;font-size:.82rem;box-sizing:border-box;}
+  .claimBlock{border:1px solid var(--hud-border);border-radius:10px;padding:12px;margin-bottom:12px;background:rgba(255,255,255,0.03);}
+  .resultActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
+  .statBox{background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;}
+  .statBox .num{font-size:1.15rem;font-weight:700;color:var(--accent);}
+  .statBox .label{font-size:.64rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;}
+  #summaryBox{background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 12px;font-size:.74rem;white-space:pre-wrap;max-height:220px;overflow:auto;font-family:ui-monospace,monospace;color:var(--text-dim);}
+  #notebookTabs, #evidenceTabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .tabBtn{padding:6px 12px;border-radius:8px;border:1px solid var(--hud-border);background:rgba(255,255,255,0.05);color:var(--text-dim);font-size:.76rem;cursor:pointer;}
+  .tabBtn.active{background:var(--accent);color:#231303;}
+
+  #mobileControls{position:fixed;inset:0;z-index:16;display:none;}
+  #joyMove{position:absolute;left:20px;bottom:20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);pointer-events:auto;}
+  .joyStick{position:absolute;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.28);top:29px;left:29px;}
+  #lookZone{position:absolute;right:0;top:0;bottom:120px;width:55%;pointer-events:auto;}
+  #mobileInteract{position:fixed;bottom:140px;right:26px;width:72px;height:72px;border-radius:50%;background:var(--accent);color:#231303;
+    font-weight:700;display:none;align-items:center;justify-content:center;z-index:17;pointer-events:auto;font-size:.72rem;border:none;}
+
+  @media (max-width:720px){ #progressPanel{min-width:150px;font-size:.72rem;} #controlsHint{display:none;} #topRight{max-width:200px;} }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><h1>Redstone Bluff</h1><p>Preparing the site…</p></div>
+<div id="noWebGL"><h2>3D view unavailable</h2><p>Your browser or device couldn't start WebGL. A text-based version of this investigation isn't yet available in this build — please try a different browser or device.</p></div>
+
+<div id="nameGate">
+  <div class="card">
+    <h2>Redstone Bluff Archaeological Investigation</h2>
+    <p>You've just been hired as a field archaeologist. Erosion along the Redstone River has exposed artifacts, and a highway expansion gives your team three weeks to investigate before construction begins. Enter your name to begin.</p>
+    <input type="text" id="studentName" placeholder="Your name" maxlength="60" autocomplete="off">
+    <label for="qualitySeg">Visual quality</label>
+    <div class="segRow" id="qualitySeg">
+      <button type="button" class="segBtn" data-q="low">Low</button>
+      <button type="button" class="segBtn active" data-q="standard">Standard</button>
+      <button type="button" class="segBtn" data-q="high">High</button>
+    </div>
+    <label for="sensSlider">Mouse sensitivity</label>
+    <div class="rangeRow"><input type="range" id="sensSlider" min="0.4" max="2" step="0.05" value="1"><span id="sensVal">1.0×</span></div>
+    <button class="btn full" id="startBtn" style="margin-top:16px;">Begin Investigation</button>
+  </div>
+</div>
+
+<div id="briefingOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="briefingTitle">Field Briefing</h2>
+    <p id="briefingBody" style="white-space:pre-line;"></p>
+    <div class="resultActions"><button class="btn full" id="briefingContinueBtn">Continue</button></div>
+  </div>
+</div>
+
+<div id="hud" style="display:none;">
+  <div id="progressPanel">
+    <div id="stationBanner">Station 1 · Preparing for the Field</div>
+    <div class="row"><span>Project days left</span><b id="daysStat">21</b></div>
+    <div class="row"><span>Evidence collected</span><b id="evidenceStat">0</b></div>
+    <div class="row"><span>Ethics decisions</span><b id="ethicsStat">0/1</b></div>
+    <div id="contextInstruction">Begin by building your field kit.</div>
+  </div>
+  <div id="topRight">
+    <button type="button" class="iconBtn" id="notebookBtn" aria-label="Open field notebook" title="Field notebook">📓</button>
+    <button type="button" class="iconBtn" id="evidenceBtn" aria-label="Open Evidence Room" title="Evidence Room">🗃️</button>
+    <button type="button" class="iconBtn" id="settingsBtn" aria-label="Open settings" title="Settings">⚙️</button>
+    <button type="button" class="iconBtn" id="resultsBtn" aria-label="View investigation report" title="Investigation report">📊</button>
+    <button type="button" class="iconBtn" id="helpBtn" aria-label="Show controls help" title="Controls">?</button>
+  </div>
+</div>
+
+<div id="crosshair"></div>
+<div id="interactPrompt">Press <b>E</b> to interact</div>
+<button type="button" class="btn" id="objectiveAction">Open Toolkit</button>
+<div id="controlsHint"><b>Move:</b> WASD or ↑/↓ · <b>Turn:</b> mouse drag or ←/→ · <b>Interact:</b> click a highlighted object, Enter, Space, or E · <b>Esc:</b> release mouse/close optional panels</div>
+<div class="surveyGuideFlag" id="surveyGuideFlag">Survey objects inspected: <b id="surveyGuideCount">0/5</b></div>
+<div id="miniMapWrap" aria-label="Site minimap"><div id="miniMapLabel"><span>Site map</span><span>▲ North</span></div><canvas id="miniMap" width="220" height="220"></canvas></div>
+<div id="viewControls"><button type="button" class="iconBtn" id="turnLeftBtn" aria-label="Turn left">↶ Turn</button><button type="button" class="iconBtn" id="resetViewBtn" aria-label="Reset view">Reset view</button><button type="button" class="iconBtn" id="turnRightBtn" aria-label="Turn right">Turn ↷</button></div>
+
+
+<div id="onboardingOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>How to Explore Redstone Bluff</h2>
+    <div class="stepList">
+      <div class="stepItem"><div class="stepNum">1</div><div><b>Look around</b><p>Drag the mouse across the scene, use Left/Right Arrow keys, or click once to enable free mouse look.</p></div></div>
+      <div class="stepItem"><div class="stepNum">2</div><div><b>Move</b><p>Use W/S or Up/Down to move forward and back. Use A/D to step sideways.</p></div></div>
+      <div class="stepItem"><div class="stepNum">3</div><div><b>Interact</b><p>Click a highlighted object, or press Enter, Space, or E when its label appears.</p></div></div>
+    </div>
+    <p><b>Your first task:</b> build your field kit. The toolkit will open next automatically.</p>
+    <div class="resultActions"><button type="button" class="btn full" id="onboardingContinueBtn">Build My Field Kit</button></div>
+  </div>
+</div>
+
+<!-- Station 1: Equipment selection -->
+<div id="equipmentOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Preparing for the Field</h2>
+    <p>Select the equipment your field kit needs. Some items here don't belong on a responsible excavation — think about what each tool is actually for.</p>
+    <div class="itemGrid" id="equipmentGrid"></div>
+    <div id="equipmentJustify" class="justifyBox" style="display:none;"></div>
+    <div class="resultActions">
+      <button class="btn" id="prepareKitBtn">Prepare Kit &amp; Continue</button>
+      <button class="btn secondary" id="closeEquipmentBtn">Step Away</button>
+    </div>
+  </div>
+</div>
+
+<!-- Survey flag decision -->
+<div id="surveyOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="surveyItemName">Surface Find</h2>
+    <canvas id="surveyInspectCanvas" width="600" height="250" aria-label="Enlarged visual inspection of the selected surface object"></canvas>
+    <p id="surveyItemDesc"></p>
+    <p><b>Is this archaeological evidence, or something else?</b></p>
+    <div class="justifyChoices" id="surveyChoices"></div>
+    <div id="surveyFeedback" style="margin-top:10px;font-size:.85rem;" aria-live="polite"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeSurveyBtn">Continue Survey</button></div>
+  </div>
+</div>
+
+<!-- Unit selection -->
+<div id="unitChoiceOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Choose an Excavation Unit</h2>
+    <p>Project time only allows for one unit to be opened right now. Where you place it will shape what you can learn about the site.</p>
+    <div id="unitChoiceList"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeUnitChoiceBtn">Not Yet</button></div>
+  </div>
+</div>
+
+<!-- Excavation panel -->
+<div id="excavationOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="excavationUnitTitle">Excavating Unit</h2>
+    <p id="excavationLevelDesc"></p>
+    <div id="excavationChoices" class="justifyChoices"></div>
+    <div id="excavationFeedback" style="margin-top:10px;font-size:.85rem;" aria-live="polite"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeExcavationBtn" style="display:none;">Continue to Documentation</button></div>
+  </div>
+</div>
+
+<!-- Artifact documentation decision -->
+<div id="artifactDocOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="artifactDocTitle">A Find</h2>
+    <p id="artifactDocDesc"></p>
+    <div class="justifyChoices" id="artifactDocChoices"></div>
+    <div id="artifactDocFeedback" style="margin-top:10px;font-size:.85rem;" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- Feature interpretation -->
+<div id="featureOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Feature Encountered</h2>
+    <p id="featureDesc"></p>
+    <h3>What does this feature most likely represent?</h3>
+    <div class="justifyChoices" id="featureChoices"></div>
+    <h3>How confident are you in this interpretation?</h3>
+    <div class="confRow" id="featureConfidence">
+      <button type="button" class="confBtn" data-c="strong">Strong</button>
+      <button type="button" class="confBtn" data-c="probable">Probable</button>
+      <button type="button" class="confBtn" data-c="tentative">Tentative</button>
+      <button type="button" class="confBtn" data-c="insufficient">Insufficient evidence</button>
+    </div>
+    <div id="featureFeedback" style="margin-top:10px;font-size:.85rem;" aria-live="polite"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeFeatureBtn" style="display:none;">Continue</button></div>
+  </div>
+</div>
+
+<!-- Ethics scenario -->
+<div id="ethicsOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="ethicsHeading">A Visitor at the Site</h2>
+    <p id="ethicsDesc"></p>
+    <div class="justifyChoices" id="ethicsChoices"></div>
+    <div id="ethicsFeedback" style="margin-top:10px;font-size:.85rem;" aria-live="polite"></div>
+    <p style="font-size:.72rem;color:var(--text-dim);margin-top:10px;">In a real project, the exact legal and procedural response depends on jurisdiction, land ownership, applicable law, and agency or institutional protocol — the reasoning here reflects general professional practice, not a universal legal rule.</p>
+    <div class="resultActions"><button class="btn secondary" id="closeEthicsBtn" style="display:none;">Continue</button></div>
+  </div>
+</div>
+
+<!-- Field Lab -->
+<div id="labOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Field Laboratory</h2>
+    <p>Only what you actually recovered appears here.</p>
+    <div class="evList" id="labList"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeLabBtn">Close</button></div>
+  </div>
+</div>
+
+<!-- Evidence Room -->
+<div id="evidenceOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Evidence Room</h2>
+    <div id="evidenceTabs">
+      <button type="button" class="tabBtn active" data-tab="survey">Survey</button>
+      <button type="button" class="tabBtn" data-tab="excavation">Excavation</button>
+      <button type="button" class="tabBtn" data-tab="artifacts">Artifacts</button>
+      <button type="button" class="tabBtn" data-tab="features">Features</button>
+      <button type="button" class="tabBtn" data-tab="ethics">Ethics</button>
+    </div>
+    <div id="evidenceContent"></div>
+    <div id="interpretationReadiness" role="status" style="margin-top:12px;padding:10px 12px;border:1px solid var(--hud-border);border-radius:8px;color:var(--text-dim);font-size:.82rem;"></div>
+    <div class="resultActions">
+      <button class="btn" id="goToInterpretationBtn">Build Final Interpretation</button>
+      <button class="btn secondary" id="closeEvidenceBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Final interpretation -->
+<div id="interpretationOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Tell the Story of Redstone Bluff</h2>
+    <p>Based on everything you've collected, what happened here? Build at least one claim, cite the evidence that supports it, and explain your reasoning.</p>
+    <div id="claimsContainer"></div>
+    <button class="btn secondary" id="addClaimBtn" type="button">+ Add Another Claim</button>
+    <h3>Limitations &amp; further work</h3>
+    <textarea class="notebookInput" id="limitationsInput" placeholder="What's still uncertain? What would you investigate next?"></textarea>
+    <div id="limitationsError" role="alert" style="color:var(--danger);font-size:.78rem;margin-top:4px;min-height:1em;"></div>
+    <div class="resultActions">
+      <button class="btn" id="submitInterpretationBtn">Submit Interpretation</button>
+      <button class="btn secondary" id="closeInterpretationBtn">Not Yet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notebook -->
+<div id="notebookOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Field Notebook</h2>
+    <div id="notebookTabs">
+      <button type="button" class="tabBtn active" data-tab="briefing">Briefing</button>
+      <button type="button" class="tabBtn" data-tab="equipment">Equipment</button>
+      <button type="button" class="tabBtn" data-tab="survey">Survey</button>
+      <button type="button" class="tabBtn" data-tab="excavation">Excavation</button>
+      <button type="button" class="tabBtn" data-tab="notes">Notes</button>
+      <button type="button" class="tabBtn" data-tab="interpretation">Interpretation</button>
+    </div>
+    <div id="notebookContent"></div>
+    <div class="resultActions"><button class="btn secondary" id="closeNotebookBtn">Close</button></div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="settingsOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Settings</h2>
+    <label for="qualitySeg2">Visual quality</label>
+    <div class="segRow" id="qualitySeg2">
+      <button type="button" class="segBtn" data-q="low">Low</button>
+      <button type="button" class="segBtn active" data-q="standard">Standard</button>
+      <button type="button" class="segBtn" data-q="high">High</button>
+    </div>
+    <label for="sensSlider2">Mouse sensitivity</label>
+    <div class="rangeRow"><input type="range" id="sensSlider2" min="0.4" max="2" step="0.05" value="1"><span id="sensVal2">1.0×</span></div>
+    <label class="muteRow" style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:.82rem;color:var(--text);margin-top:6px;">
+      <input type="checkbox" id="cameraBobToggle" checked> Camera bob while walking
+    </label>
+    <div class="resultActions"><button class="btn secondary" id="closeSettingsBtn">Close</button></div>
+  </div>
+</div>
+
+<!-- Results / Report -->
+<div id="resultsOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Redstone Bluff Investigation Report</h2>
+    <div class="statGrid" id="reportStats"></div>
+    <h3>Performance profile</h3>
+    <div id="reportProfile"></div>
+    <p style="font-size:.8rem;color:var(--text-dim);margin-top:14px;">Copyable report:</p>
+    <div id="summaryBox"></div>
+    <div class="resultActions">
+      <button class="btn" id="downloadCsvBtn">Download CSV</button>
+      <button class="btn secondary" id="copySummaryBtn">Copy Report</button>
+      <button class="btn secondary" id="copyXapiBtn">Copy xAPI JSON</button>
+      <button class="btn secondary" id="closeResultsBtn">Keep Investigating</button>
+    </div>
+  </div>
+</div>
+
+<div id="mobileControls">
+  <div id="joyMove"><div class="joyStick" id="joyMoveStick"></div></div>
+  <div id="lookZone"></div>
+</div>
+<button id="mobileInteract">Interact</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* =========================================================================
+   QUALITY PRESETS
+   ========================================================================= */
+const QUALITY_PRESETS = {
+  low:      { shadowsEnabled:false, shadowMapSize:512,  pixelRatioCap:1,   propDensity:0.5, grassCount:0 },
+  standard: { shadowsEnabled:true,  shadowMapSize:1536, pixelRatioCap:1.5, propDensity:1,   grassCount:30 },
+  high:     { shadowsEnabled:true,  shadowMapSize:2560, pixelRatioCap:2,   propDensity:1.3, grassCount:60 }
+};
+let Q = QUALITY_PRESETS.standard;
+
+/* =========================================================================
+   SiteConfig — static content data for the vertical slice. Deliberately
+   scoped to the "immediate implementation priority" section of the brief:
+   one equipment station, one survey pass, a choice between two candidate
+   excavation units (of the many described in the full design), one feature,
+   one ethics scenario, and one Evidence Room / final interpretation.
+   Fuller content (dating station, additional features, multiple ethics
+   scenarios, etc.) is documented as deferred in the final report.
+   ========================================================================= */
+const SiteConfig = {
+  siteHalf: 30,
+  supervisorName: "Dr. Elena Castillo, Field Director",
+  units: {
+    unitA: { id:"unitA", x:-8, z:8, label:"Unit A — Artifact Concentration",
+      hint:"A dense surface scatter of flakes and sherds suggests this spot may sample everyday activity.", featureFloor:null },
+    unitB: { id:"unitB", x:10, z:10, label:"Unit B — Bluff-Edge Profile",
+      hint:"Placed at the eroding bluff edge, this unit can capture the site's full soil sequence before the river takes it.", featureFloor:null }
+  }
+};
+
+const EQUIPMENT_ITEMS = [
+  { id:"trowel", label:"Pointing Trowel", icon:"⛏️", appropriate:true },
+  { id:"shovel", label:"Shovel", icon:"🔨", appropriate:true },
+  { id:"munsell", label:"Munsell Soil Book", icon:"🎨", appropriate:true },
+  { id:"tape", label:"Measuring Tape", icon:"📏", appropriate:true },
+  { id:"linelevel", label:"Line Level", icon:"📐", appropriate:true },
+  { id:"plumbbob", label:"Plumb Bob", icon:"⚖️", appropriate:true },
+  { id:"gps", label:"GPS Unit", icon:"📡", appropriate:true },
+  { id:"screen", label:"Quarter-Inch Screen", icon:"🔲", appropriate:true },
+  { id:"buckets", label:"Buckets", icon:"🪣", appropriate:true },
+  { id:"brush", label:"Brush", icon:"🖌️", appropriate:true },
+  { id:"pick", label:"Wooden/Dental Pick", icon:"📍", appropriate:true },
+  { id:"camera", label:"Camera", icon:"📷", appropriate:true },
+  { id:"clipboard", label:"Clipboard & Forms", icon:"📋", appropriate:true },
+  { id:"bags", label:"Artifact Bags & Tags", icon:"🛍️", appropriate:true },
+  { id:"scale", label:"Photo Scale", icon:"📊", appropriate:true },
+  { id:"gloves", label:"Gloves", icon:"🧤", appropriate:true, justify:true },
+  { id:"firstaid", label:"First-Aid Kit", icon:"⛑️", appropriate:true },
+  { id:"chainsaw", label:"Chainsaw", icon:"🪚", appropriate:false, justify:true },
+  { id:"leafblower", label:"Leaf Blower", icon:"🌀", appropriate:false },
+  { id:"pressurewasher", label:"Pressure Washer", icon:"💦", appropriate:false },
+  { id:"rake", label:"Garden Rake", icon:"🧹", appropriate:false },
+  { id:"metaldetector", label:"Unauthorized Metal Detector", icon:"🔍", appropriate:false, justify:true },
+  { id:"marker", label:"Permanent Marker (for artifacts)", icon:"🖊️", appropriate:false, justify:true }
+];
+const EQUIPMENT_JUSTIFY = {
+  gloves: { prompt:"When would gloves matter most here?", choices:[
+    { text:"When handling faunal bone or anything that might need biological caution", correct:true, feedback:"Right — gloves protect both the handler and, in some cases, the integrity of organic remains for later analysis." },
+    { text:"Only when it's cold outside", correct:false, feedback:"Comfort isn't the reason gloves are part of a field kit — it's about safe, consistent handling of finds." },
+    { text:"To make artifacts easier to grip", correct:false, feedback:"Grip isn't the main purpose — it's about safe handling practice, not convenience." }
+  ]},
+  chainsaw: { prompt:"Why doesn't this belong in a careful excavation kit?", choices:[
+    { text:"It would destroy far more context than any excavation task requires", correct:true, feedback:"Exactly — nothing on a careful excavation calls for that much uncontrolled force this close to fragile deposits." },
+    { text:"It's too loud for a quiet site", correct:false, feedback:"Noise isn't really the concern — the risk to the archaeological deposit itself is." },
+    { text:"It requires a special license", correct:false, feedback:"Licensing isn't the core issue here — it's simply the wrong tool for anything this task requires." }
+  ]},
+  metaldetector: { prompt:"What's the actual problem with this item?", choices:[
+    { text:"Using one without proper permitting/authorization on an archaeological site can violate legal protections and site protocols", correct:true, feedback:"Right. Metal detecting can be a legitimate part of formal survey — but only with authorization, a research design, and proper recording, not as a casual add-on." },
+    { text:"Metal detectors never find anything useful", correct:false, feedback:"They can be useful in the right context — the issue here is authorization, not usefulness." },
+    { text:"They're too expensive for a small project", correct:false, feedback:"Cost isn't the concern — permitting and legal authorization are." }
+  ]},
+  marker: { prompt:"Why is writing directly on an artifact with a permanent marker a problem?", choices:[
+    { text:"It permanently alters the object and skips proper labeling procedure (bags/tags, or reversible archival methods)", correct:true, feedback:"Correct. Proper cataloging uses tags, bags, and (when direct labeling is truly needed) reversible archival methods — never a permanent marker straight onto the object." },
+    { text:"The ink might not be visible enough", correct:false, feedback:"Visibility isn't the core issue — permanently altering the object itself is." },
+    { text:"It takes too long to write clearly", correct:false, feedback:"Speed isn't the concern — permanently marking an artifact is a preservation problem regardless of how neatly it's done." }
+  ]}
+};
+
+const SURVEY_ITEMS = [
+  { id:"sv1", name:"Chipped Stone Flake", shape:"flake", desc:"A small gray stone object, roughly triangular, with a sharp, consistent edge and a flat platform at one end where it appears to have been struck from a larger core.", isEvidence:true,
+    feedback:{
+      correct:"Correct. The platform and consistent flake scars are diagnostic of intentional stone tool production, not natural breakage.",
+      incorrect:"This is actually archaeological evidence. The flat striking platform and consistent fracture pattern radiating from it are diagnostic of intentional flintknapping — natural rock breakage doesn't produce that pattern." } },
+  { id:"sv2", name:"Rounded River Cobble", shape:"cobble", desc:"A smooth, evenly rounded stone about fist-sized, resting in the grass among several similar stones nearby.", isEvidence:false,
+    feedback:{
+      correct:"Good call leaving this one. Natural river-rounded cobbles like this are common here and show no signs of intentional modification.",
+      incorrect:"This one is natural, not cultural. Its rounding is from water tumbling over a long time, and it lacks any flake scars, edge-wear, or other signs of modification." } },
+  { id:"sv3", name:"Pottery Sherd", shape:"sherd", desc:"A curved fragment with a smoothed outer surface and faint parallel marks, noticeably different in texture from the surrounding stone and soil.", isEvidence:true,
+    feedback:{
+      correct:"Correct. The curvature (consistent with a vessel wall), the firing, and the surface treatment are all consistent with a pottery fragment.",
+      incorrect:"This one is evidence. Its curvature matches a vessel wall, and the fired, smoothed surface with tool marks isn't something that occurs naturally." } },
+  { id:"sv4", name:"Fire-Cracked Rock", shape:"fcr", desc:"An angular rock fragment with a reddish, crazed (finely cracked) surface, sitting alone in open grass with no other rocks nearby.", isEvidence:true,
+    feedback:{
+      correct:"Correct. That heat-crazing pattern is consistent with rock that was heated and cooled repeatedly, often associated with hearths or cooking features.",
+      incorrect:"This one is evidence, not just a rock. The reddish, crazed surface is heat damage from repeated heating and cooling — a strong sign of use in a fire, not a natural condition." } },
+  { id:"sv5", name:"Aluminum Can Fragment", shape:"modern", desc:"A rusted, partially crushed thin metal fragment with faint traces of printed lettering still visible.", isEvidence:false,
+    feedback:{
+      correct:"Right to flag this as modern. Printed lettering and thin aluminum construction place this well within the recent past, not the prehistoric occupation.",
+      incorrect:"This one is modern debris, not archaeological evidence from the prehistoric occupation — the printed lettering and aluminum construction are unmistakably recent manufacture." } }
+];
+
+/* =========================================================================
+   INVESTIGATION STATE — the persistent record threading every station
+   together. Nothing here is cosmetic; each field feeds later phases and
+   the final report (see EvidenceManager / InterpretationManager below).
+   ========================================================================= */
+const InvestigationState = {
+  studentName: "",
+  daysRemaining: 21,
+  equipment: { selected: [], justifications: {} },
+  survey: { flagged: [] }, // {id, name, calledEvidence, actuallyEvidence, correct}
+  chosenUnit: null,
+  excavation: { levelsCompleted: 0, screened: false, toolChoices: [], decisions: [] },
+  artifacts: [], // {id, name, provenience:'good'|'poor', screenedRecovery:bool}
+  artifactsMissed: [],
+  features: [], // {id, interpretation, confidence, documented:bool}
+  ethics: { decisions: [] }, // {scenario, choice, sound:bool, feedback}
+  notes: [],
+  finalInterpretation: { claims: [], limitations: "" }
+};
+
+function daysCost(action, amount){
+  InvestigationState.daysRemaining = Math.max(0, InvestigationState.daysRemaining - amount);
+  InvestigationState.notes.push(`[Time] ${action}: -${amount} project day(s). ${InvestigationState.daysRemaining} remaining.`);
+  refreshHUDRef();
+}
+let refreshHUDRef = ()=>{}; // wired once refreshHUD is defined below
+
+/* =========================================================================
+   TELEMETRY — event stream with xAPI verbs matching the investigation's
+   actual actions (selected, observed, measured, photographed, classified,
+   interpreted, documented, completed), plus CSV/summary export.
+   ========================================================================= */
+const Telemetry = (function(){
+  let events = [];
+  let sessionStart = null;
+  function start(name){ InvestigationState.studentName = name; sessionStart = performance.now(); log({objectId:"session", verb:"opened"}); }
+  function log(evt){
+    // Store both a monotonic elapsed offset (for CSV/duration math, immune to
+    // clock adjustments) and a real wall-clock ISO timestamp captured right
+    // now (for xAPI) — the previous version reconstructed a fake ISO date
+    // from a performance.now() difference at export time, which drifts from
+    // reality if the tab was ever backgrounded/throttled.
+    evt.elapsedMs = performance.now() - (sessionStart||performance.now());
+    evt.timestampISO = new Date().toISOString();
+    events.push(evt);
+  }
+  function record(objectId, verb, extra={}){ log(Object.assign({objectId, verb}, extra)); }
+  function timeOnTaskMs(){ if (!sessionStart) return 0; const last = events.length?events[events.length-1].elapsedMs:0; return last; }
+  function formatTime(ms){ const s=Math.floor(ms/1000), m=Math.floor(s/60), rem=s%60; return `${m}:${rem.toString().padStart(2,'0')}`; }
+
+  function toCSV(){
+    const rows = [["objectId","verb","detail","elapsed_ms","timestamp_iso"]];
+    events.forEach(e=>{
+      const detail = Object.keys(e).filter(k=>!['objectId','verb','elapsedMs','timestampISO'].includes(k)).map(k=>`${k}=${e[k]}`).join(';');
+      rows.push([e.objectId, e.verb, detail, Math.round(e.elapsedMs), e.timestampISO]);
+    });
+    const esc = v=>{ const s=String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+    return "\uFEFF" + rows.map(r=>r.map(esc).join(",")).join("\n");
+  }
+  const ACTIVITY_NAMES = {
+    equipment_kit:"Field equipment kit", final_interpretation:"Final Redstone Bluff interpretation",
+    ethics_visitor:"Visitor-collecting ethics scenario", hearth1:"Hearth feature", sherd1:"Pottery sherd find"
+  };
+  const VERB_IRIS = {
+    selected:"http://id.tincanapi.com/verb/selected", observed:"http://activitystrea.ms/schema/1.0/observe",
+    measured:"http://id.tincanapi.com/verb/measured", photographed:"http://id.tincanapi.com/verb/captured-photo",
+    classified:"http://id.tincanapi.com/verb/categorized", interpreted:"http://adlnet.gov/expapi/verbs/responded",
+    documented:"http://id.tincanapi.com/verb/recorded", completed:"http://adlnet.gov/expapi/verbs/completed",
+    opened:"http://id.tincanapi.com/verb/viewed"
+  };
+  function toXAPI(){
+    const actor = { name: InvestigationState.studentName||"Student", objectType:"Agent" };
+    const statements = events.filter(e=>e.objectId!=="session").map(e=>{
+      const verbId = VERB_IRIS[e.verb] || `https://redstonebluff.local/verbs/${e.verb}`;
+      const humanName = ACTIVITY_NAMES[e.objectId] || e.objectId;
+      const extensions = {};
+      ['correct','provenience','confidence','documented','sound','included','calledEvidence','justificationCorrect','claimCount'].forEach(k=>{
+        if (e[k] !== undefined) extensions[`https://redstonebluff.local/ext/${k}`] = e[k];
+      });
+      const stmt = {
+        actor,
+        verb: { id: verbId, display:{"en-US": e.verb} },
+        object: {
+          id:`https://redstonebluff.local/object/${e.objectId}`,
+          definition:{ name:{"en-US": humanName}, description:{"en-US": `Redstone Bluff investigation: ${e.verb} — ${humanName}`} }
+        },
+        timestamp: e.timestampISO
+      };
+      if (e.correct !== undefined || Object.keys(extensions).length){
+        stmt.result = {};
+        if (e.correct !== undefined) stmt.result.success = e.correct;
+        if (Object.keys(extensions).length) stmt.result.extensions = extensions;
+      }
+      return stmt;
+    });
+    return JSON.stringify(statements, null, 2);
+  }
+  return { start, record, timeOnTaskMs, formatTime, toCSV, toXAPI, getEvents:()=>events };
+})();
+
+/* =========================================================================
+   SCENE FOUNDATION
+   ========================================================================= */
+let scene, camera, renderer, sun, hemi;
+let webglOk = true;
+try{ renderer = new THREE.WebGLRenderer({ antialias:true }); if (!renderer.getContext()) webglOk=false; }catch(e){ webglOk=false; }
+
+if (!webglOk){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('noWebGL').style.display='block';
+} else {
+
+scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xc3cfa0, 30, 170);
+scene.background = new THREE.Color(0x9fbdd6);
+camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 500);
+camera.position.set(0, 1.65, 22);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+function makeCanvas(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return {c, ctx:c.getContext('2d')}; }
+function textureFrom(c, rx=1, ry=1){ const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); t.colorSpace=THREE.SRGBColorSpace; return t; }
+function buildBumpTexture(w,h,grain=0.05){
+  const {c,ctx}=makeCanvas(w,h); ctx.fillStyle="#808080"; ctx.fillRect(0,0,w,h);
+  for (let i=0;i<w*h*grain;i++){ const v=Math.random()*70+30; ctx.fillStyle=`rgb(${v},${v},${v})`; ctx.fillRect(Math.random()*w,Math.random()*h,1.5,1.5); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+const CACHED = {};
+function buildGroundTexture(){
+  if (CACHED.ground) return CACHED.ground;
+  const {c,ctx}=makeCanvas(1024,1024);
+  const grad=ctx.createLinearGradient(0,0,1024,1024);
+  grad.addColorStop(0,"#6f7b45"); grad.addColorStop(.45,"#8a7a4f"); grad.addColorStop(1,"#a45f3f");
+  ctx.fillStyle=grad; ctx.fillRect(0,0,1024,1024);
+  for(let i=0;i<120;i++){
+    ctx.fillStyle=`rgba(${80+Math.random()*70},${55+Math.random()*50},${30+Math.random()*35},${0.05+Math.random()*0.11})`;
+    ctx.beginPath(); ctx.ellipse(Math.random()*1024,Math.random()*1024,25+Math.random()*95,15+Math.random()*55,Math.random()*Math.PI,0,Math.PI*2); ctx.fill();
+  }
+  for(let i=0;i<700;i++){ ctx.fillStyle=`rgba(40,35,20,${Math.random()*0.12})`; ctx.fillRect(Math.random()*1024,Math.random()*1024,2+Math.random()*5,1+Math.random()*3); }
+  ctx.strokeStyle='rgba(215,190,145,.16)'; ctx.lineWidth=18; ctx.beginPath(); ctx.moveTo(460,1024); ctx.bezierCurveTo(500,700,420,420,530,0); ctx.stroke();
+  CACHED.ground = textureFrom(c,5,5);
+  return CACHED.ground;
+}
+function buildWaterTexture(){
+  const {c,ctx} = makeCanvas(256,256);
+  const grad = ctx.createLinearGradient(0,0,0,256);
+  grad.addColorStop(0,"#4a7a98"); grad.addColorStop(0.35,"#2e5570"); grad.addColorStop(0.65,"#2e5570"); grad.addColorStop(1,"#5a8ba8");
+  ctx.fillStyle=grad; ctx.fillRect(0,0,256,256);
+  for (let i=0;i<220;i++){ ctx.strokeStyle=`rgba(255,255,255,${Math.random()*0.12})`; ctx.beginPath(); ctx.moveTo(Math.random()*256,Math.random()*256); ctx.lineTo(Math.random()*256,Math.random()*256); ctx.stroke(); }
+  return textureFrom(c,6,3);
+}
+function buildStrataTexture(opts={}){
+  const W=768,H=768; const {c,ctx}=makeCanvas(W,H);
+  const bands=[{color:"#5a4530",h:0.16},{color:"#8a6b42",h:0.22},{color:"#a8754a",h:0.24},{color:"#c9a876",h:0.20},{color:"#d8c8a0",h:0.18}];
+  let y=0;
+  bands.forEach((b,bi)=>{
+    const bandH=b.h*H; ctx.fillStyle=b.color;
+    ctx.beginPath(); ctx.moveTo(0,y+Math.sin(0.3)*6);
+    for (let x=0;x<=W;x+=14){ ctx.lineTo(x, y+Math.sin(x*0.045+bi)*7+(Math.random()-0.5)*4); }
+    ctx.lineTo(W,y+bandH); ctx.lineTo(0,y+bandH); ctx.closePath(); ctx.fill();
+    for (let i=0;i<220;i++){ ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.07})`; ctx.fillRect(Math.random()*W,y+Math.random()*bandH,6+Math.random()*10,2+Math.random()*3); }
+    for (let i=0;i<8;i++){ ctx.fillStyle="rgba(120,120,115,0.5)"; ctx.beginPath(); ctx.ellipse(Math.random()*W,y+Math.random()*bandH,4+Math.random()*7,3+Math.random()*5,Math.random()*Math.PI,0,Math.PI*2); ctx.fill(); }
+    for (let i=0;i<12;i++){ ctx.fillStyle="rgba(15,12,10,0.6)"; ctx.fillRect(Math.random()*W,y+Math.random()*bandH,1.5,1.5); }
+    y+=bandH;
+  });
+  if (opts.charcoalStain){
+    ctx.fillStyle="rgba(20,16,12,0.5)";
+    ctx.beginPath(); ctx.ellipse(W*0.5,H*0.08,80,20,0,0,Math.PI*2); ctx.fill();
+  }
+  return textureFrom(c,1,1);
+}
+function buildMeshTexture(){
+  if (CACHED.mesh) return CACHED.mesh;
+  const {c,ctx}=makeCanvas(128,128);
+  ctx.strokeStyle="rgba(90,90,90,0.9)"; ctx.lineWidth=1.5;
+  for (let i=0;i<=128;i+=10){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,128); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(128,i); ctx.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(4,4); t.colorSpace=THREE.SRGBColorSpace;
+  CACHED.mesh=t; return t;
+}
+function buildSignTexture(lines,w=560,h=200,bg="#7a6142"){
+  const {c,ctx}=makeCanvas(w,h);
+  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle="rgba(0,0,0,0.4)"; ctx.lineWidth=4; ctx.strokeRect(4,4,w-8,h-8);
+  ctx.fillStyle="#f0ede2"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  const lineH=h/(lines.length+1);
+  lines.forEach((line,i)=>{ ctx.font = i===0 ? `bold ${Math.round(h*0.2)}px Georgia, serif` : `${Math.round(h*0.13)}px Georgia, serif`; ctx.fillText(line, w/2, lineH*(i+1)); });
+  return textureFrom(c,1,1);
+}
+function buildSkyDomeTexture(){
+  const w=1024,h=512; const {c,ctx}=makeCanvas(w,h);
+  const grad=ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,"#5f8fc6"); grad.addColorStop(0.55,"#accdd9"); grad.addColorStop(0.78,"#dcd0a0"); grad.addColorStop(1,"#c0ac7a");
+  ctx.fillStyle=grad; ctx.fillRect(0,0,w,h);
+  const sun=ctx.createRadialGradient(w*0.7,h*0.5,0,w*0.7,h*0.5,140);
+  sun.addColorStop(0,"rgba(255,250,225,0.95)"); sun.addColorStop(1,"rgba(255,250,225,0)");
+  ctx.fillStyle=sun; ctx.beginPath(); ctx.arc(w*0.7,h*0.5,140,0,Math.PI*2); ctx.fill();
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace; return tex;
+}
+const skyDome = new THREE.Mesh(new THREE.SphereGeometry(240,32,16), new THREE.MeshBasicMaterial({ map:buildSkyDomeTexture(), side:THREE.BackSide, fog:false, depthWrite:false }));
+skyDome.renderOrder=-1; scene.add(skyDome);
+
+// SITE_HALF/PIT_SIZE and the collision/interactive-object registries are
+// declared here — before lighting/grass/site-layout construction, all of
+// which reference them — since a few of those run immediately at load time
+// and a const can't be read before its own declaration executes.
+const SITE_HALF = SiteConfig.siteHalf;
+const PIT_SIZE = 1.9;
+
+// ID-based collision system — every box has an id so it can be individually
+// removed later (fixes the bug where an opened unit's collision box from its
+// "plug" state was never cleared, permanently blocking that ground tile).
+const collisionBounds = new Map(); // id -> {minX,maxX,minZ,maxZ}
+function addCollisionBox(id, x, z, w, d){ collisionBounds.set(id, { minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2 }); }
+function removeCollisionBox(id){ collisionBounds.delete(id); }
+
+// Interactive-object registry used by the raycaster below. Declared here
+// (before any site construction) since buildUnitPlug/buildScreenProp/etc.
+// all register into it as they build.
+const interactiveMeshes = [];
+function registerInteractive(obj, kind, id){ obj.userData.interaction = { kind, id }; interactiveMeshes.push(obj); }
+function unregisterInteractive(obj){ const idx = interactiveMeshes.indexOf(obj); if (idx!==-1) interactiveMeshes.splice(idx,1); }
+function findInteractionMeta(obj){
+  let cur = obj;
+  while (cur){ if (cur.userData && cur.userData.interaction) return cur.userData.interaction; cur = cur.parent; }
+  return null;
+}
+
+sun = new THREE.DirectionalLight(0xfff2d6, 2.1);
+sun.position.set(-22,30,10);
+sun.shadow.camera.left=-50; sun.shadow.camera.right=50; sun.shadow.camera.top=50; sun.shadow.camera.bottom=-50; sun.shadow.camera.far=130; sun.shadow.bias=-0.0004;
+scene.add(sun);
+hemi = new THREE.HemisphereLight(0xd8e8f0, 0x6b5a3a, 1.2);
+scene.add(hemi);
+
+/* =========================================================================
+   VISUAL QUALITY — applyQualityPreset is the single place quality settings
+   take effect, and it's genuinely re-callable at any time (name gate,
+   in-session Settings panel), unlike the previous version where selecting a
+   preset only changed a variable that the already-constructed scene never
+   looked at again. Pixel ratio and shadows apply immediately; grass density
+   is handled via an InstancedMesh allocated at the maximum count once, with
+   quality only adjusting how many instances are actually drawn (.count) —
+   avoiding a full rebuild every time quality changes.
+   ========================================================================= */
+const GRASS_MAX = QUALITY_PRESETS.high.grassCount;
+let grassMesh = null;
+function buildGrass(){
+  // Grounded, low-poly tufts replace the former upright green planes, which
+  // looked like floating cards at a distance. Tufts are kept around the site
+  // perimeter so work areas, survey objects, and excavation units remain clear.
+  const geo = new THREE.ConeGeometry(0.12, 0.22, 5);
+  geo.translate(0, 0.11, 0); // base sits at ground level
+  const mat = new THREE.MeshStandardMaterial({ color:0x667a3d, roughness:1, flatShading:true });
+  grassMesh = new THREE.InstancedMesh(geo, mat, GRASS_MAX);
+  grassMesh.count = 0;
+  const dummy = new THREE.Object3D();
+  let placed = 0;
+  for (let i=0;i<GRASS_MAX*4 && placed<GRASS_MAX;i++){
+    const ang = Math.random()*Math.PI*2;
+    const rad = SITE_HALF*0.62 + Math.random()*(SITE_HALF*0.30);
+    const x = Math.cos(ang)*rad;
+    const z = Math.sin(ang)*rad;
+    const insideUnit = Object.values(SiteConfig.units).some(u=>Math.abs(x-u.x)<PIT_SIZE+1.5 && Math.abs(z-u.z)<PIT_SIZE+1.5);
+    const surveyClearance = [[-16,-6],[-12,-4],[-18,0],[-10,2],[-15,4]];
+    const nearSurvey = surveyClearance.some(([sx,sz])=>Math.hypot(x-sx,z-sz)<2.0);
+    if (insideUnit || nearSurvey) continue;
+    const scale = 0.75 + Math.random()*0.7;
+    dummy.position.set(x,0,z);
+    dummy.rotation.y = Math.random()*Math.PI*2;
+    dummy.scale.set(scale*(0.8+Math.random()*0.4), scale, scale*(0.8+Math.random()*0.4));
+    dummy.updateMatrix();
+    grassMesh.setMatrixAt(placed++, dummy.matrix);
+  }
+  grassMesh.count = placed;
+  grassMesh.instanceMatrix.needsUpdate = true;
+  grassMesh.castShadow = false;
+  grassMesh.receiveShadow = true;
+  scene.add(grassMesh);
+}
+buildGrass();
+
+function applyQualityPreset(presetName){
+  const preset = QUALITY_PRESETS[presetName];
+  if (!preset) return;
+  Q = preset;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioCap));
+  renderer.shadowMap.enabled = preset.shadowsEnabled;
+  sun.castShadow = preset.shadowsEnabled;
+  sun.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
+  // shadow map regenerates from mapSize changes automatically on next render,
+  // but disposing any existing map guarantees it isn't left stale
+  if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
+  if (grassMesh) grassMesh.count = Math.min(preset.grassCount, GRASS_MAX);
+  // Guarded: applyQualityPreset's first call (right below) happens before
+  // treeList/bushList exist later in the script, so a plain call here would
+  // throw a temporal-dead-zone error on load. By the time quality is ever
+  // actually changed by the learner, everything is built and this succeeds.
+  try { applyVegetationQuality(presetName); } catch(e){ /* vegetation not built yet — fine, applied once it is */ }
+}
+applyQualityPreset('standard'); // matches the name gate's default selection
+
+function woodMat(){ return new THREE.MeshStandardMaterial({ color:0x8a6b42, roughness:0.85 }); }
+function metalMat(){ return new THREE.MeshStandardMaterial({ color:0x9098a0, roughness:0.4, metalness:0.6 }); }
+
+// Reusable shade canopy: four poles, a slightly sloped fabric roof, and
+// corner guy lines. Sized to shelter a work area without its footprint
+// colliding with the interaction target beneath it (no new collision box —
+// the underlying desk/table/kiosk already has one).
+function buildCanopy(x, z, color, w=3.2, d=2.6, height=2.1, rotY=0){
+  const g = new THREE.Group();
+  const legGeo = new THREE.CylinderGeometry(0.04,0.04, height, 8);
+  const legMat = metalMat();
+  const hw=w/2-0.15, hd=d/2-0.15;
+  const legPositions = [[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]];
+  legPositions.forEach(([lx,lz])=>{
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(lx, height/2, lz); leg.castShadow=true;
+    g.add(leg);
+  });
+  const roofMat = new THREE.MeshStandardMaterial({ color, roughness:0.75, side:THREE.DoubleSide });
+  const roof = new THREE.Mesh(new THREE.PlaneGeometry(w, d, 4, 3), roofMat);
+  roof.rotation.x = -Math.PI/2;
+  roof.position.y = height + 0.06;
+  // a slight ridge/slope so it doesn't read as a perfectly flat plane
+  const posAttr = roof.geometry.attributes.position;
+  for (let i=0;i<posAttr.count;i++){
+    const localX = posAttr.getX(i);
+    posAttr.setZ(i, posAttr.getZ(i) + Math.abs(localX)*0.08);
+  }
+  posAttr.needsUpdate = true;
+  roof.geometry.computeVertexNormals();
+  roof.castShadow = true; roof.receiveShadow = true;
+  g.add(roof);
+  // corner guy lines, purely decorative
+  const lineMat = new THREE.LineBasicMaterial({ color:0xd8d0b8 });
+  legPositions.forEach(([lx,lz])=>{
+    const outX = lx + Math.sign(lx)*0.5, outZ = lz + Math.sign(lz)*0.5;
+    const pts = [new THREE.Vector3(lx, height*0.75, lz), new THREE.Vector3(outX, 0.05, outZ)];
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+  });
+  g.position.set(x,0,z);
+  g.rotation.y = rotY;
+  scene.add(g);
+  return g;
+}
+
+/* =========================================================================
+   SITE LAYOUT — ground with real openings at both candidate unit
+   locations (see EXCAVATION_STATE below for which becomes the real dig).
+   ========================================================================= */
+const groundShape = new THREE.Shape();
+groundShape.moveTo(-SITE_HALF,-SITE_HALF); groundShape.lineTo(SITE_HALF,-SITE_HALF);
+groundShape.lineTo(SITE_HALF,SITE_HALF); groundShape.lineTo(-SITE_HALF,SITE_HALF); groundShape.lineTo(-SITE_HALF,-SITE_HALF);
+Object.values(SiteConfig.units).forEach(u=>{
+  const hole = new THREE.Path(); const hw=PIT_SIZE/2;
+  hole.moveTo(u.x-hw,u.z-hw); hole.lineTo(u.x+hw,u.z-hw); hole.lineTo(u.x+hw,u.z+hw); hole.lineTo(u.x-hw,u.z+hw); hole.lineTo(u.x-hw,u.z-hw);
+  groundShape.holes.push(hole);
+});
+const groundGeo = new THREE.ShapeGeometry(groundShape,2);
+{ const uvAttr=groundGeo.attributes.uv; for (let i=0;i<uvAttr.count;i++){ uvAttr.setXY(i, uvAttr.getX(i)*44, uvAttr.getY(i)*44); } }
+const groundBump = buildBumpTexture(256,256,0.05); groundBump.repeat.set(44,44);
+const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map:buildGroundTexture(), bumpMap:groundBump, bumpScale:0.03, roughness:1 }));
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true;
+scene.add(ground);
+
+// river along the north edge + bluff face
+const riverGeo = new THREE.PlaneGeometry(SITE_HALF*2.4, 9, 28, 6);
+{
+  // jitter the site-facing edge for an irregular shoreline instead of a
+  // perfectly straight bank; the far edge stays clean since it's never seen
+  const pos = riverGeo.attributes.position;
+  for (let i=0;i<pos.count;i++){
+    const localY = pos.getY(i);
+    if (localY > 2.6){
+      pos.setY(i, localY + (Math.random()-0.3)*1.1);
+      pos.setX(i, pos.getX(i) + (Math.random()-0.5)*0.5);
+    }
+  }
+  pos.needsUpdate = true;
+  riverGeo.computeVertexNormals();
+}
+const riverMat = new THREE.MeshStandardMaterial({ map: buildWaterTexture(), roughness:0.25, metalness:0.15, transparent:true, opacity:0.9 });
+const river = new THREE.Mesh(riverGeo, riverMat);
+river.rotation.x=-Math.PI/2; river.position.set(0, -0.3, -SITE_HALF-4);
+scene.add(river);
+// riverbank rocks and driftwood along the near shoreline
+{
+  const bankRockMat = new THREE.MeshStandardMaterial({ color:0x8a8478, roughness:0.9 });
+  for (let i=0;i<10;i++){
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.15+Math.random()*0.15,0), bankRockMat);
+    rock.position.set(-SITE_HALF+4+i*4+(Math.random()-0.5)*2, 0.05, -SITE_HALF-1+(Math.random()-0.5)*1.5);
+    rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    rock.castShadow=true; rock.receiveShadow=true;
+    scene.add(rock);
+  }
+  const driftwoodMat = new THREE.MeshStandardMaterial({ color:0x6b5638, roughness:0.9 });
+  [[-10,0.2],[6,-0.3],[16,0.15]].forEach(([x,zoff])=>{
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,1.6,8), driftwoodMat);
+    log.rotation.z = Math.PI/2; log.rotation.y = (Math.random()-0.5)*0.6;
+    log.position.set(x, 0.06, -SITE_HALF-0.5+zoff);
+    log.castShadow=true;
+    scene.add(log);
+  });
+}
+const bluffGeo = new THREE.PlaneGeometry(SITE_HALF*2.2, 3.2, 32, 6);
+{
+  const pos = bluffGeo.attributes.position;
+  for (let i=0;i<pos.count;i++){
+    const x = pos.getX(i), y = pos.getY(i);
+    // push the face in and out irregularly (undercut/slump variation),
+    // stronger near the bottom (more eroded) than the top
+    const erosionBias = (1 - (y+1.6)/3.2) * 0.35;
+    pos.setZ(i, pos.getZ(i) + (Math.random()-0.5)*0.3*(0.4+erosionBias));
+  }
+  pos.needsUpdate = true;
+  bluffGeo.computeVertexNormals();
+}
+const bluffFace = new THREE.Mesh(bluffGeo, new THREE.MeshStandardMaterial({ map: buildStrataTexture({}), roughness:0.95 }));
+bluffFace.position.set(0,-1.4,-SITE_HALF+1); bluffFace.receiveShadow=true; bluffFace.castShadow=true;
+scene.add(bluffFace);
+// talus (slumped soil/rock debris) at the base of the bluff, and a few
+// exposed roots protruding from the eroding face
+{
+  const talusMat = new THREE.MeshStandardMaterial({ color:0x7a6448, roughness:1 });
+  for (let i=0;i<9;i++){
+    const talus = new THREE.Mesh(new THREE.ConeGeometry(0.3+Math.random()*0.25, 0.28+Math.random()*0.2, 8), talusMat);
+    talus.position.set(-SITE_HALF+6+i*5+(Math.random()-0.5)*2, -2.7, -SITE_HALF+1.6+(Math.random()-0.5)*0.5);
+    talus.rotation.y = Math.random()*Math.PI;
+    talus.castShadow=true; talus.receiveShadow=true;
+    scene.add(talus);
+  }
+  const rootMat = new THREE.MeshStandardMaterial({ color:0x5a4a30, roughness:0.9 });
+  for (let i=0;i<6;i++){
+    const root = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.035,0.7,6), rootMat);
+    root.position.set(-SITE_HALF+8+i*6, -1.5+Math.random()*0.8, -SITE_HALF+1.1);
+    root.rotation.z = Math.PI/2 + (Math.random()-0.5)*0.5;
+    root.rotation.y = (Math.random()-0.5)*0.6;
+    root.castShadow = true;
+    scene.add(root);
+  }
+}
+// exposed artifact hint near the bluff face (visual only — this is the
+// "artifacts visible near the erosion face" cue, not a separate station)
+{
+  const hint = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshStandardMaterial({ color:0xd8cba0, roughness:0.7 }));
+  hint.position.set(6,-0.5,-SITE_HALF+1.35); scene.add(hint);
+}
+// safety barrier along the bluff edge
+{
+  const barrierMat = new THREE.MeshStandardMaterial({ color:0xd94141, roughness:0.6 });
+  for (let x=-SITE_HALF+2;x<SITE_HALF-2;x+=3){
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.9,6), barrierMat);
+    post.position.set(x,0.45,-SITE_HALF+3); scene.add(post);
+  }
+  addCollisionBox('bluff-barrier', 0,-SITE_HALF+3,SITE_HALF*2-4,0.3);
+}
+
+// visible site perimeter: rope-and-stake boundary with an entrance gap near the arrival area
+{
+  const postMat=new THREE.MeshStandardMaterial({color:0x7a5a36,roughness:.9});
+  const ropeMat=new THREE.LineBasicMaterial({color:0xe2c27d});
+  const pts=[];
+  for(let x=-SITE_HALF+1;x<=SITE_HALF-1;x+=3){ if(Math.abs(x)<3) continue; const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.65,6),postMat); p.position.set(x,.325,SITE_HALF-1); scene.add(p); }
+  for(let z=-SITE_HALF+4;z<=SITE_HALF-1;z+=3){ [-SITE_HALF+1,SITE_HALF-1].forEach(x=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.65,6),postMat); p.position.set(x,.325,z); scene.add(p); }); }
+  const addRope=(a,b)=>scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]),ropeMat));
+  addRope([-SITE_HALF+1,.52,-SITE_HALF+4],[-SITE_HALF+1,.52,SITE_HALF-1]); addRope([SITE_HALF-1,.52,-SITE_HALF+4],[SITE_HALF-1,.52,SITE_HALF-1]);
+  addRope([-SITE_HALF+1,.52,-SITE_HALF+4],[SITE_HALF-1,.52,-SITE_HALF+4]);
+  addRope([-SITE_HALF+1,.52,SITE_HALF-1],[-3,.52,SITE_HALF-1]); addRope([3,.52,SITE_HALF-1],[SITE_HALF-1,.52,SITE_HALF-1]);
+}
+
+// clearly bordered survey transect area
+{
+  const mat=new THREE.MeshStandardMaterial({color:0xe0b34e,roughness:.75});
+  const minX=-20,maxX=-8,minZ=-8,maxZ=6;
+  [[minX,minZ],[maxX,minZ],[maxX,maxZ],[minX,maxZ]].forEach(([x,z])=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.8,6),mat); p.position.set(x,.4,z); scene.add(p); });
+  const lineMat=new THREE.LineBasicMaterial({color:0xe0b34e});
+  const points=[[minX,.55,minZ],[maxX,.55,minZ],[maxX,.55,maxZ],[minX,.55,maxZ],[minX,.55,minZ]].map(v=>new THREE.Vector3(...v));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),lineMat));
+}
+
+// distant highway-development pressure — kept well outside the work area,
+// visible but not dominant, per the brief
+{
+  const hwZ = SITE_HALF + 7;
+  const fenceMat = new THREE.MeshStandardMaterial({ color:0xc9a876, roughness:0.7 });
+  for (let x=-14;x<=14;x+=3.5){
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.1,6), fenceMat);
+    post.position.set(x,0.55,hwZ); post.castShadow=true; scene.add(post);
+  }
+  const railGeo = new THREE.BoxGeometry(28.5,0.06,0.06);
+  const rail = new THREE.Mesh(railGeo, fenceMat); rail.position.set(0,0.9,hwZ); scene.add(rail);
+  const rail2 = rail.clone(); rail2.position.y = 0.5; scene.add(rail2);
+  // survey/right-of-way stakes leading toward the fence line
+  const stakeMat = new THREE.MeshStandardMaterial({ color:0xd94141, roughness:0.6 });
+  for (let i=0;i<5;i++){
+    const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,6), stakeMat);
+    stake.position.set(-10+i*5, 0.25, hwZ-4-i*1.5); scene.add(stake);
+  }
+  // dirt access road running toward the grading area
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(3, 18), new THREE.MeshStandardMaterial({ color:0x8a7050, roughness:1 }));
+  road.rotation.x=-Math.PI/2; road.position.set(10, 0.008, hwZ+2);
+  scene.add(road);
+  // simplified excavator silhouette (low-poly, reads as machinery from a distance)
+  const machMat = new THREE.MeshStandardMaterial({ color:0xd9a441, roughness:0.6 });
+  const excavator = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.4,0.5,1.8), machMat); base.position.y=0.6;
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.7,0.9), machMat); cab.position.set(0,1.15,-0.2);
+  const boom = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.18,1.6), machMat); boom.position.set(0,1.3,0.9); boom.rotation.x=-0.5;
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.14,0.14,1.1), machMat); stick.position.set(0,0.75,1.7); stick.rotation.x=0.6;
+  const trackMat = new THREE.MeshStandardMaterial({ color:0x2a2a2a, roughness:0.8 });
+  const tracks = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.3,2.0), trackMat); tracks.position.y=0.15;
+  excavator.add(base, cab, boom, stick, tracks);
+  excavator.traverse(o=>{ if (o.isMesh) o.castShadow=true; });
+  excavator.position.set(10, 0, hwZ+5);
+  excavator.rotation.y = 0.3;
+  scene.add(excavator);
+  // construction sign facing the site
+  addSignPost(0, hwZ-1, ["HIGHWAY EXPANSION","Right-of-Way — Construction Pending"], Math.PI);
+}
+
+function addSignPost(x,z,lines,rotY=0){
+  const tex = buildSignTexture(lines);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.55), new THREE.MeshStandardMaterial({ map:tex, roughness:0.8, side:THREE.DoubleSide }));
+  sign.position.set(x,1.3,z); sign.rotation.y=rotY;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,1.3,8), woodMat());
+  post.position.set(x,0.65,z); post.castShadow=true;
+  scene.add(sign,post);
+}
+addSignPost(0, SITE_HALF-2, ["REDSTONE BLUFF","Archaeological Investigation"]);
+addSignPost(-6, SITE_HALF-2, ["3-Week Project Timeline","Highway Construction Pending"], Math.PI*0.15);
+addSignPost(6, SITE_HALF-2, ["Erosion Threat Zone","River Bluff — North"], -Math.PI*0.15);
+addSignPost(-14,-2, ["Surface Survey Zone"], Math.PI*0.4);
+addSignPost(0,4, ["Excavation Grid"], 0);
+addSignPost(14,-4, ["Screening Station"], -Math.PI*0.5);
+addSignPost(18,4, ["Field Laboratory"], -Math.PI*0.5);
+addSignPost(-18,4, ["Evidence Room"], Math.PI*0.5);
+
+// Lightweight stylized field-director figure — simple geometry, but reads
+// clearly as a person: legs, boots, torso, arms, head with a minimal neutral
+// face, field hat, and a held clipboard. No facial animation, per spec.
+function buildSupervisorFace(){
+  const {c,ctx} = makeCanvas(64,64);
+  ctx.clearRect(0,0,64,64);
+  ctx.fillStyle = "rgba(30,25,20,0.7)";
+  ctx.beginPath(); ctx.ellipse(22,28,4,5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(42,28,4,5,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "rgba(90,45,35,0.6)"; ctx.lineWidth=2.5; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(24,42); ctx.quadraticCurveTo(32,46,40,42); ctx.stroke();
+  return textureFrom(c,1,1);
+}
+function buildSupervisorFigure(x,z,rotY=0){
+  const g = new THREE.Group();
+  const pantsMat = new THREE.MeshStandardMaterial({ color:0x5a5240, roughness:0.85 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color:0x6b7a4a, roughness:0.8 });
+  const skinMat = new THREE.MeshStandardMaterial({ color:0xd8a273, roughness:0.75 });
+  const bootMat = new THREE.MeshStandardMaterial({ color:0x2a2016, roughness:0.7 });
+  const hatMat = new THREE.MeshStandardMaterial({ color:0xc9b483, roughness:0.8 });
+
+  [-0.09,0.09].forEach(offset=>{
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.085,0.8,10), pantsMat);
+    leg.position.set(offset,0.42,0); leg.castShadow=true; g.add(leg);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.13,0.1,0.24), bootMat);
+    boot.position.set(offset,0.05,0.03); boot.castShadow=true; g.add(boot);
+  });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23,0.2,0.62,12), shirtMat);
+  torso.position.y=1.15; torso.castShadow=true; g.add(torso);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,0.1,8), skinMat);
+  neck.position.y=1.48; g.add(neck);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17,16,16), skinMat);
+  head.position.y=1.63; head.scale.set(0.95,1.05,0.92); head.castShadow=true; g.add(head);
+  const faceMat = new THREE.MeshBasicMaterial({ map:buildSupervisorFace(), transparent:true });
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(0.22,0.22), faceMat);
+  face.position.set(0,1.62,-0.16); face.rotation.y = Math.PI;
+  g.add(face);
+  // field hat: brim + shallow crown
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.02,16), hatMat);
+  brim.position.y=1.75; brim.castShadow=true; g.add(brim);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.15,0.12,12), hatMat);
+  crown.position.y=1.82; crown.castShadow=true; g.add(crown);
+
+  const armMat = skinMat;
+  const armGeo = new THREE.CylinderGeometry(0.05,0.055,0.46,10);
+  const armL = new THREE.Group();
+  const armLMesh = new THREE.Mesh(armGeo, shirtMat.clone()); armLMesh.position.y=-0.14; armLMesh.scale.y=0.6;
+  const foreArmL = new THREE.Mesh(armGeo, armMat); foreArmL.position.y=-0.4; foreArmL.rotation.x=-0.5; foreArmL.scale.y=0.55;
+  armL.add(armLMesh, foreArmL);
+  armL.position.set(-0.27,1.42,0); armL.rotation.z=0.15;
+  const armR = new THREE.Group();
+  const armRMesh = new THREE.Mesh(armGeo, shirtMat.clone()); armRMesh.position.y=-0.14; armRMesh.scale.y=0.6;
+  const foreArmR = new THREE.Mesh(armGeo, armMat); foreArmR.position.y=-0.38; foreArmR.rotation.x=-0.9; foreArmR.scale.y=0.5;
+  armR.add(armRMesh, foreArmR);
+  armR.position.set(0.27,1.42,0); armR.rotation.z=-0.15;
+  g.add(armL, armR);
+  // clipboard, held forward in the right hand
+  const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.24,0.02), new THREE.MeshStandardMaterial({ color:0xe8e2d0, roughness:0.7 }));
+  clipboard.position.set(0.27,1.15,-0.22); clipboard.rotation.x=-0.3;
+  g.add(clipboard);
+
+  g.traverse(o=>{ if (o.isMesh) o.castShadow = true; });
+  g.position.set(x,0,z); g.rotation.y = rotY;
+  scene.add(g);
+  return { group:g, baseRotY: rotY };
+}
+const supervisorFigure = buildSupervisorFigure(0.9, SITE_HALF-6.2, -Math.PI/2);
+{
+  const desk = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6), woodMat());
+  desk.position.set(0,0.3,SITE_HALF-6); desk.castShadow=true; desk.receiveShadow=true;
+  scene.add(desk);
+  addCollisionBox('supervisor-desk', 0,SITE_HALF-6,1.4,1.6);
+  registerInteractive(desk, 'supervisor', null);
+  buildCanopy(0, SITE_HALF-6.3, 0xd8cba0, 3.4, 2.8, 2.2);
+}
+
+// field laboratory table (populated dynamically from InvestigationState.artifacts)
+const labTablePos = { x:18, z:2 };
+{
+  const table = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.06,0.8), woodMat());
+  table.position.set(labTablePos.x,0.55,labTablePos.z); table.castShadow=true; table.receiveShadow=true;
+  const legGeo = new THREE.CylinderGeometry(0.03,0.03,0.55,6);
+  [[-0.7,-0.35],[0.7,-0.35],[-0.7,0.35],[0.7,0.35]].forEach(([lx,lz])=>{
+    const leg=new THREE.Mesh(legGeo,woodMat()); leg.position.set(labTablePos.x+lx,0.275,labTablePos.z+lz); scene.add(leg);
+  });
+  scene.add(table);
+  addCollisionBox('lab-table', labTablePos.x, labTablePos.z, 1.9, 1.1);
+  registerInteractive(table, 'lab', null);
+  buildCanopy(labTablePos.x, labTablePos.z, 0x8a9aa8, 3.6, 3.0, 2.15, Math.PI/2);
+
+  // reference-tool cluster: camera, scale, Munsell book, hand lens, clipboard
+  const {c:mc, ctx:mctx} = makeCanvas(140,100);
+  mctx.fillStyle="#e8e2d0"; mctx.fillRect(0,0,140,100);
+  const munsellColors = ["#7a4a2a","#a8754a","#c9a876","#8a6b42","#5a4530","#b08050"];
+  munsellColors.forEach((col,i)=>{ mctx.fillStyle=col; mctx.fillRect(6+(i%3)*44,6+Math.floor(i/3)*46,38,40); mctx.strokeStyle="rgba(0,0,0,0.3)"; mctx.strokeRect(6+(i%3)*44,6+Math.floor(i/3)*46,38,40); });
+  const munsell = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.02,0.16), new THREE.MeshStandardMaterial({ map:textureFrom(mc,1,1), roughness:0.7 }));
+  munsell.position.set(labTablePos.x-0.55,0.585,labTablePos.z-0.28); munsell.castShadow=true;
+  const camBody = new THREE.Mesh(new THREE.BoxGeometry(0.14,0.09,0.06), new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.5 }));
+  camBody.position.set(labTablePos.x-0.2,0.60,labTablePos.z-0.28); camBody.castShadow=true;
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.05,12), new THREE.MeshStandardMaterial({ color:0x2a2a2a, roughness:0.3 }));
+  lens.rotation.x=Math.PI/2; lens.position.set(labTablePos.x-0.2,0.60,labTablePos.z-0.33);
+  const scaleBar = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.008,0.03), new THREE.MeshStandardMaterial({ color:0xd94141, roughness:0.6 }));
+  scaleBar.position.set(labTablePos.x+0.1,0.585,labTablePos.z-0.28);
+  const lensRing = new THREE.Mesh(new THREE.TorusGeometry(0.035,0.008,8,16), metalMat());
+  lensRing.position.set(labTablePos.x+0.45,0.6,labTablePos.z-0.28); lensRing.rotation.x=Math.PI/2;
+  const lensHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.1,6), woodMat());
+  lensHandle.position.set(labTablePos.x+0.45,0.585,labTablePos.z-0.18);
+  const {c:cc, ctx:cctx} = makeCanvas(64,80);
+  cctx.fillStyle="#e8e2d0"; cctx.fillRect(0,0,64,80);
+  cctx.strokeStyle="rgba(0,0,0,0.3)"; cctx.lineWidth=1;
+  for (let i=0;i<8;i++){ cctx.beginPath(); cctx.moveTo(6,10+i*8); cctx.lineTo(58,10+i*8); cctx.stroke(); }
+  const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.02,0.28), new THREE.MeshStandardMaterial({ map:textureFrom(cc,1,1), roughness:0.8 }));
+  clipboard.position.set(labTablePos.x+0.3,0.585,labTablePos.z+0.28); clipboard.castShadow=true;
+  scene.add(munsell, camBody, lens, scaleBar, lensRing, lensHandle, clipboard);
+
+  // second table: crates, buckets, sample containers, bagging supplies
+  const table2Pos = { x: labTablePos.x, z: labTablePos.z+1.4 };
+  const table2 = new THREE.Mesh(new THREE.BoxGeometry(1.3,0.06,0.6), woodMat());
+  table2.position.set(table2Pos.x,0.5,table2Pos.z); table2.castShadow=true; table2.receiveShadow=true;
+  const leg2Geo = new THREE.CylinderGeometry(0.03,0.03,0.5,6);
+  [[-0.55,-0.25],[0.55,-0.25],[-0.55,0.25],[0.55,0.25]].forEach(([lx,lz])=>{
+    const leg=new THREE.Mesh(leg2Geo,woodMat()); leg.position.set(table2Pos.x+lx,0.25,table2Pos.z+lz); scene.add(leg);
+  });
+  scene.add(table2);
+  addCollisionBox('lab-table2', table2Pos.x, table2Pos.z, 1.5, 0.9);
+  const crateMat = new THREE.MeshStandardMaterial({ color:0x6b5a3a, roughness:0.9 });
+  [[-0.4,0],[-0.1,0]].forEach(([lx,lz],i)=>{
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.2,0.25), crateMat);
+    crate.position.set(table2Pos.x+lx, 0.53+i*0.01, table2Pos.z+lz); crate.castShadow=true; crate.receiveShadow=true;
+    scene.add(crate);
+  });
+  const bucketMat = new THREE.MeshStandardMaterial({ color:0x8a8478, roughness:0.6, metalness:0.2 });
+  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.1,0.2,12), bucketMat);
+  bucket.position.set(table2Pos.x+0.35,0.1,table2Pos.z+0.32); bucket.castShadow=true;
+  scene.add(bucket);
+  const jarMat = new THREE.MeshStandardMaterial({ color:0xd8e0d8, roughness:0.3, transparent:true, opacity:0.7 });
+  [0.2,0.3,0.4].forEach(lx=>{
+    const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.07,10), jarMat);
+    jar.position.set(table2Pos.x+lx,0.535,table2Pos.z-0.15);
+    scene.add(jar);
+  });
+  const bagStackMat = new THREE.MeshStandardMaterial({ color:0xe8e8e0, transparent:true, opacity:0.75, side:THREE.DoubleSide });
+  const bagStack = new THREE.Mesh(new THREE.PlaneGeometry(0.12,0.16), bagStackMat);
+  bagStack.rotation.x=-Math.PI/2; bagStack.position.set(table2Pos.x-0.5,0.535,table2Pos.z+0.2);
+  scene.add(bagStack);
+}
+
+// Dynamic artifact cards on the lab table — rebuilt whenever
+// InvestigationState.artifacts changes. Poor provenience gets a visibly
+// different card color, border, AND a text warning icon (not color alone).
+const labArtifactMeshes = [];
+function refreshLabDisplay(){
+  labArtifactMeshes.forEach(m=>{
+    scene.remove(m);
+    if (m.geometry) m.geometry.dispose();
+    if (m.material){ if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
+  });
+  labArtifactMeshes.length = 0;
+  InvestigationState.artifacts.forEach((a,i)=>{
+    const col = i % 4, row = Math.floor(i/4);
+    const cx = labTablePos.x - 0.55 + col*0.38;
+    const cz = labTablePos.z + 0.02 + row*0.28;
+    const good = a.provenience === 'good';
+    const {c,ctx} = makeCanvas(160,100);
+    ctx.fillStyle = good ? '#e6f0e2' : '#f5e6c8';
+    ctx.fillRect(0,0,160,100);
+    ctx.strokeStyle = good ? '#6fa889' : '#c9614f';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(3,3,154,94);
+    ctx.fillStyle = '#241f18'; ctx.font='bold 16px Georgia, serif'; ctx.textAlign='center';
+    ctx.fillText(a.name, 80, 34);
+    ctx.font = '13px Georgia, serif';
+    ctx.fillText(good ? 'Provenience: complete' : '\u26A0 Incomplete provenience', 80, 62);
+    if (!good){ ctx.font='bold 13px Georgia, serif'; ctx.fillText('LIMITED INTERPRETIVE VALUE', 80, 82); }
+    const tex = textureFrom(c,1,1);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.34,0.21), new THREE.MeshStandardMaterial({ map:tex, roughness:0.8 }));
+    card.rotation.x = -Math.PI/2;
+    card.position.set(cx, 0.585, cz);
+    card.receiveShadow = true;
+    scene.add(card);
+    labArtifactMeshes.push(card);
+  });
+}
+// evidence room marker (a small kiosk)
+const evidenceRoomPos = { x:-18, z:2 };
+let evidenceBoardMesh = null;
+{
+  const kiosk = new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.5), new THREE.MeshStandardMaterial({ color:0x5a4a38, roughness:0.8 }));
+  kiosk.position.set(evidenceRoomPos.x,0.55,evidenceRoomPos.z); kiosk.castShadow=true; kiosk.receiveShadow=true;
+  scene.add(kiosk);
+  addCollisionBox('evidence-kiosk', evidenceRoomPos.x, evidenceRoomPos.z, 1.1, 0.7);
+  registerInteractive(kiosk, 'evidence', null);
+  buildCanopy(evidenceRoomPos.x, evidenceRoomPos.z, 0xb8825a, 3.6, 3.0, 2.15, Math.PI/2);
+
+  // record boxes / folders stacked beside the kiosk
+  const boxMat = new THREE.MeshStandardMaterial({ color:0x8a6b48, roughness:0.85 });
+  [[-0.7,-0.3,0],[-0.7,0.1,0],[-0.7,0.5,0.02]].forEach(([lx,lz,ly],i)=>{
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.18,0.22), boxMat);
+    box.position.set(evidenceRoomPos.x+lx, 0.09+i*0.19, evidenceRoomPos.z+lz); box.castShadow=true; box.receiveShadow=true;
+    scene.add(box);
+  });
+  const folderMat = new THREE.MeshStandardMaterial({ color:0xd8c8a0, roughness:0.8 });
+  const folder = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.02,0.32), folderMat);
+  folder.position.set(evidenceRoomPos.x+0.55,1.12,evidenceRoomPos.z-0.05); folder.castShadow=true;
+  scene.add(folder);
+
+  // the evidence board itself — a physical stand with a canvas texture that
+  // gets redrawn whenever the investigation state changes (see refreshEvidenceBoard)
+  const standMat = woodMat();
+  const standL = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,1.5,6), standMat);
+  standL.position.set(evidenceRoomPos.x-0.62,0.75,evidenceRoomPos.z-0.4); scene.add(standL);
+  const standR = standL.clone(); standR.position.x = evidenceRoomPos.x+0.62; scene.add(standR);
+  evidenceBoardMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.3,0.85), new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.9 }));
+  evidenceBoardMesh.position.set(evidenceRoomPos.x, 1.35, evidenceRoomPos.z-0.4);
+  evidenceBoardMesh.castShadow = true;
+  scene.add(evidenceBoardMesh);
+}
+function refreshEvidenceBoard(){
+  if (!evidenceBoardMesh) return;
+  const {c,ctx} = makeCanvas(420,280);
+  ctx.fillStyle="#efe9d8"; ctx.fillRect(0,0,420,280);
+  ctx.strokeStyle="rgba(0,0,0,0.35)"; ctx.lineWidth=5; ctx.strokeRect(4,4,412,272);
+  ctx.fillStyle="#241f18"; ctx.textAlign="left";
+  ctx.font="bold 22px Georgia, serif"; ctx.fillText("Redstone Bluff — Evidence Board", 16, 34);
+  ctx.font="15px Georgia, serif";
+  const survDone = InvestigationState.survey.flagged.filter(s=>s.correct).length;
+  const artGood = InvestigationState.artifacts.filter(a=>a.provenience==='good').length;
+  const featDone = InvestigationState.features.filter(f=>f.documented).length;
+  const ethicsSound = InvestigationState.ethics.decisions.filter(e=>e.sound).length;
+  const lines = [
+    `Survey: ${survDone}/${SURVEY_ITEMS.length} correctly classified`,
+    `Excavation unit: ${InvestigationState.chosenUnit ? SiteConfig.units[InvestigationState.chosenUnit].label : 'not yet selected'}`,
+    `Artifacts recovered: ${InvestigationState.artifacts.length} (${artGood} with full provenience)`,
+    `Finds likely missed: ${InvestigationState.artifactsMissed.length}`,
+    `Features recorded: ${InvestigationState.features.length} (${featDone} fully documented)`,
+    `Ethics decisions: ${InvestigationState.ethics.decisions.length}/1 (${ethicsSound} sound)`,
+    `Chronology: not yet available — dating station not reached this session`
+  ];
+  let y = 68;
+  lines.forEach(line=>{ ctx.fillText(line, 16, y); y += 30; });
+  if (evidenceBoardMesh.material.map) evidenceBoardMesh.material.map.dispose();
+  evidenceBoardMesh.material.map = textureFrom(c,1,1);
+  evidenceBoardMesh.material.needsUpdate = true;
+}
+refreshEvidenceBoard();
+
+// screening station
+const screenPos = { x:14, z:-2 };
+function buildScreenProp(){
+  const g = new THREE.Group();
+  const frameMat = woodMat();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.08,0.08), frameMat); top.position.set(0,1.05,-0.32);
+  const bottom = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.08,0.08), frameMat); bottom.position.set(0,0.55,0.22);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.85,0.62), new THREE.MeshStandardMaterial({ map:buildMeshTexture(), transparent:true, side:THREE.DoubleSide }));
+  mesh.position.set(0,0.8,-0.05); mesh.rotation.x=-1.05;
+  const legGeo = new THREE.CylinderGeometry(0.03,0.03,0.55,6);
+  const legL = new THREE.Mesh(legGeo, frameMat); legL.position.set(-0.4,0.28,0.08); legL.rotation.z=0.15;
+  const legR = legL.clone(); legR.position.x=0.4; legR.rotation.z=-0.15;
+  g.add(top,bottom,mesh,legL,legR);
+  const pile = new THREE.Mesh(new THREE.ConeGeometry(0.5,0.35,10), new THREE.MeshStandardMaterial({ color:0x8a734a, roughness:1 }));
+  pile.position.set(0.9,0.17,0.3); g.add(pile);
+  g.position.set(screenPos.x,0,screenPos.z);
+  scene.add(g);
+  addCollisionBox('screen-station', screenPos.x, screenPos.z, 1.4, 1.1);
+  registerInteractive(g, 'screen', null);
+}
+buildScreenProp();
+
+/* =========================================================================
+   EXCAVATION UNIT PLUGS — both candidate locations start as an unopened
+   flush patch with a stake/string/number marker (a true hole exists in the
+   ground already; the plug just sits at grade until chosen).
+   ========================================================================= */
+const unitPlugs = {}; // id -> { plugGroup }
+const unitPits = {}; // id -> pit group, once opened
+const excavationVisualState = {};
+function buildUnitPlug(u){
+  const g = new THREE.Group();
+  const plug = new THREE.Mesh(new THREE.PlaneGeometry(PIT_SIZE,PIT_SIZE), new THREE.MeshStandardMaterial({ map:buildGroundTexture(), roughness:1 }));
+  plug.rotation.x=-Math.PI/2; plug.position.y=0.003; plug.receiveShadow=true;
+  g.add(plug);
+  const stakeMat = woodMat();
+  const stakeGeo = new THREE.CylinderGeometry(0.025,0.03,0.4,6);
+  const hw = PIT_SIZE/2+0.1;
+  const corners=[[-hw,-hw],[hw,-hw],[hw,hw],[-hw,hw]];
+  const stakePts=[];
+  corners.forEach(([cx,cz])=>{ const s=new THREE.Mesh(stakeGeo,stakeMat); s.position.set(cx,0.2,cz); s.castShadow=true; g.add(s); stakePts.push(new THREE.Vector3(cx,0.38,cz)); });
+  stakePts.push(stakePts[0].clone());
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(stakePts), new THREE.LineBasicMaterial({ color:0xf0ede2 })));
+  const signTex = buildSignTexture([u.label.split(' — ')[0], u.label.split(' — ')[1]||''], 220, 90, "#5a4a38");
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.65,0.27), new THREE.MeshStandardMaterial({ map:signTex, roughness:0.8 }));
+  sign.position.set(0,0.9,hw+0.4);
+  const signPost = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.9,6), stakeMat);
+  signPost.position.set(0,0.45,hw+0.4); signPost.castShadow=true;
+  g.add(sign, signPost);
+  g.position.set(u.x,0,u.z);
+  scene.add(g);
+  addCollisionBox('plug-'+u.id, u.x,u.z,PIT_SIZE+0.3,PIT_SIZE+0.3);
+  registerInteractive(g, 'unitPlug', u.id);
+  unitPlugs[u.id] = { group:g };
+}
+Object.values(SiteConfig.units).forEach(buildUnitPlug);
+
+// Four thin collision strips around a pit's rim — blocks walking into or
+// across the trench from any side while staying thin enough that the
+// learner can approach right up to the edge to look in (all four sides
+// function as a safe inspection approach; see report notes on this
+// simplification versus a single designated side).
+function addPitEdgeCollisions(u){
+  const half = PIT_SIZE/2, t = 0.18;
+  addCollisionBox('pit-'+u.id+'-back',  u.x, u.z-half, half*2+t*2, t);
+  addCollisionBox('pit-'+u.id+'-front', u.x, u.z+half, half*2+t*2, t);
+  addCollisionBox('pit-'+u.id+'-left',  u.x-half, u.z, t, half*2+t*2);
+  addCollisionBox('pit-'+u.id+'-right', u.x+half, u.z, t, half*2+t*2);
+}
+
+function buildOpenedPit(u, opts={}){
+  const g = new THREE.Group();
+  const pitW=PIT_SIZE-0.1, pitD=PIT_SIZE-0.1, pitDepth=0.85;
+  const pitFloor = new THREE.Mesh(new THREE.BoxGeometry(pitW,0.05,pitD), new THREE.MeshStandardMaterial({ color:0x6b5030, roughness:1 }));
+  pitFloor.position.y=-pitDepth; pitFloor.receiveShadow=true;
+  const wallMat = new THREE.MeshStandardMaterial({ map: buildStrataTexture(opts), roughness:0.95 });
+  const sideMat = new THREE.MeshStandardMaterial({ map: buildStrataTexture({}), roughness:1 });
+  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(pitW,pitDepth), wallMat); backWall.position.set(0,-pitDepth/2,-pitD/2); backWall.castShadow=true; backWall.receiveShadow=true;
+  const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(pitW,pitDepth), sideMat.clone()); frontWall.rotation.y=Math.PI; frontWall.position.set(0,-pitDepth/2,pitD/2);
+  const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(pitD,pitDepth), sideMat); leftWall.rotation.y=Math.PI/2; leftWall.position.set(-pitW/2,-pitDepth/2,0);
+  const rightWall = leftWall.clone(); rightWall.position.x=pitW/2; rightWall.rotation.y=-Math.PI/2;
+  g.add(pitFloor, backWall, frontWall, leftWall, rightWall);
+  const rimMat = new THREE.MeshStandardMaterial({ color:0xc98a4a, roughness:0.7 });
+  const rimGeo = new THREE.BoxGeometry(pitW+0.15,0.06,0.08);
+  const rimBack = new THREE.Mesh(rimGeo,rimMat); rimBack.position.set(0,0.02,-pitD/2-0.04);
+  const rimFront = rimBack.clone(); rimFront.position.z=pitD/2+0.04;
+  const rimSideGeo = new THREE.BoxGeometry(0.08,0.06,pitD+0.3);
+  const rimLeft = new THREE.Mesh(rimSideGeo,rimMat); rimLeft.position.set(-pitW/2-0.04,0.02,0);
+  const rimRight = rimLeft.clone(); rimRight.position.x=pitW/2+0.04;
+  g.add(rimBack,rimFront,rimLeft,rimRight);
+  const spoil = new THREE.Mesh(new THREE.ConeGeometry(0.5,0.35,10), new THREE.MeshStandardMaterial({ color:0x8a734a, roughness:1 }));
+  spoil.position.set(pitW/2+0.85,0.17,-pitD/2-0.2); spoil.castShadow=true; g.add(spoil);
+  const discoveryGroup = new THREE.Group();
+  discoveryGroup.position.y = -pitDepth + 0.05;
+  g.add(discoveryGroup);
+  excavationVisualState[u.id] = { group:g, floor:pitFloor, spoil, discoveryGroup, depth:pitDepth, level:0 };
+  g.position.set(u.x,0,u.z);
+  scene.add(g);
+  registerInteractive(g, 'pit', u.id);
+  unitPits[u.id] = g;
+}
+
+/* ---- survey scatter: 5 flaggable items in the survey zone, each with a
+   distinguishable low-poly form based on what the object actually looks
+   like — never colored by whether it counts as evidence, which would be
+   a visual spoiler before the learner classifies it ---- */
+const surveyMeshes = []; // { item, mesh, flagged }
+function buildSurveyMarker(item, x, z){
+  const g=new THREE.Group();
+  let geo, color, scale=[1,1,1];
+  switch(item.shape){
+    case 'flake':  geo = new THREE.TetrahedronGeometry(0.22,0); color=0x747474; scale=[1.2,0.35,1]; break;
+    case 'cobble': geo = new THREE.SphereGeometry(0.23,14,10); color=0x8f8065; scale=[1.2,.75,1]; break;
+    case 'sherd':  geo = new THREE.CylinderGeometry(0.22,0.22,0.06,16,1,true,0,Math.PI*0.75); color=0xa85f3b; break;
+    case 'fcr':    geo = new THREE.IcosahedronGeometry(0.22,0); color=0x9a4d36; break;
+    case 'modern': geo = new THREE.CylinderGeometry(0.11,0.13,0.24,12); color=0xb8c0c8; scale=[1,.65,.75]; break;
+    default:       geo = new THREE.SphereGeometry(0.18,12,10); color=0x888888;
+  }
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness:0.72, metalness:item.shape==='modern'?.35:0 }));
+  mesh.scale.set(...scale); mesh.position.set(0,0.16,0); mesh.rotation.y=Math.random()*Math.PI*2; mesh.castShadow=true; g.add(mesh);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.38,.48,28),new THREE.MeshBasicMaterial({color:0xe0b34e,side:THREE.DoubleSide,transparent:true,opacity:.65})); ring.rotation.x=-Math.PI/2; ring.position.y=.015; g.add(ring);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,.85,8),new THREE.MeshStandardMaterial({color:0xe8d9b0,roughness:.8})); pole.position.set(.48,.42,.05); g.add(pole);
+  const flag=new THREE.Mesh(new THREE.PlaneGeometry(.34,.2),new THREE.MeshStandardMaterial({color:0xe0b34e,side:THREE.DoubleSide,roughness:.7})); flag.position.set(.64,.72,.05); g.add(flag);
+  g.position.set(x,0,z); scene.add(g); registerInteractive(g,'survey',item.id); surveyMeshes.push({item,mesh:g,artifactMesh:mesh,flagged:false});
+}
+const surveyPositions = [[-16,-6],[-12,-4],[-18,0],[-10,2],[-15,4]];
+SURVEY_ITEMS.forEach((item,i)=>{ buildSurveyMarker(item, surveyPositions[i][0], surveyPositions[i][1]); });
+
+/* =========================================================================
+   TREES, BUSHES, ROCKS — natural procedural forms rather than single
+   cylinders/spheres. Placement is checked against the collision registry
+   and survey positions so nothing lands inside a work area or on evidence.
+   ========================================================================= */
+function isClearOfWorkAreas(x, z, margin=0.8){
+  for (const b of collisionBounds.values()){
+    if (x > b.minX-margin && x < b.maxX+margin && z > b.minZ-margin && z < b.maxZ+margin) return false;
+  }
+  for (const [sx,sz] of surveyPositions){ if (Math.hypot(x-sx, z-sz) < 1.2) return false; }
+  return true;
+}
+function findClearSpot(minR, maxR, margin=0.8, attempts=12){
+  for (let a=0;a<attempts;a++){
+    const ang = Math.random()*Math.PI*2, rad = minR + Math.random()*(maxR-minR);
+    const x = Math.cos(ang)*rad, z = Math.sin(ang)*rad;
+    if (isClearOfWorkAreas(x,z,margin)) return {x,z};
+  }
+  return null;
+}
+function buildTree(x,z,scale=1){
+  const g = new THREE.Group();
+  const trunkColor = 0x4a3a28 + Math.floor(Math.random()*0x050301);
+  const trunkMat = new THREE.MeshStandardMaterial({ color:trunkColor, roughness:0.9 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.09*scale,0.16*scale,1.8*scale,8), trunkMat);
+  trunk.position.y = 0.9*scale; trunk.castShadow=true;
+  g.add(trunk);
+  // a couple of angled branches
+  for (let i=0;i<5;i++){
+    const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.03*scale,0.05*scale,0.7*scale,6), trunkMat);
+    branch.position.set((i?0.25:-0.22)*scale, 1.5*scale, (i?0.1:-0.15)*scale);
+    branch.rotation.z = (i?-0.7:0.7); branch.rotation.x = (Math.random()-0.5)*0.4;
+    branch.castShadow=true; g.add(branch);
+  }
+  const canopyColorBase = 0x4a5a32 + Math.floor(Math.random()*0x040402);
+  const canopyMat = new THREE.MeshStandardMaterial({ color:canopyColorBase, roughness:1 });
+  const clusterOffsets = [[0,2.35,0,.62],[.45,2.15,.18,.48],[-.42,2.18,-.2,.5],[.12,2.65,-.22,.46],[-.1,2.4,.42,.44],[.48,2.45,-.28,.38]];
+  clusterOffsets.forEach(([cx,cy,cz,cr])=>{
+    const cluster = new THREE.Mesh(new THREE.IcosahedronGeometry(cr*scale,0), canopyMat);
+    cluster.position.set(cx*scale,cy*scale,cz*scale);
+    cluster.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);
+    cluster.castShadow=true;
+    g.add(cluster);
+  });
+  g.position.set(x,0,z);
+  g.rotation.y = Math.random()*Math.PI*2;
+  scene.add(g);
+  return g;
+}
+function buildBush(x,z,scale=1){
+  const g = new THREE.Group();
+  const color = 0x556b3a + Math.floor(Math.random()*0x030502);
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:1 });
+  const clusters = 3 + Math.floor(Math.random()*2);
+  for (let i=0;i<clusters;i++){
+    const r = (0.16+Math.random()*0.1)*scale;
+    const cluster = new THREE.Mesh(new THREE.IcosahedronGeometry(r,0), mat);
+    cluster.position.set((Math.random()-0.5)*0.3*scale, r*0.8, (Math.random()-0.5)*0.3*scale);
+    cluster.castShadow=true; cluster.receiveShadow=true;
+    g.add(cluster);
+  }
+  g.position.set(x,0,z);
+  scene.add(g);
+  return g;
+}
+const treeList = [];
+const bushList = [];
+const TREE_MAX = 16, BUSH_MAX = 22;
+for (let i=0;i<TREE_MAX;i++){
+  const spot = findClearSpot(SITE_HALF*0.55, SITE_HALF*0.95, 1.2);
+  if (spot) treeList.push(buildTree(spot.x, spot.z, 0.8+Math.random()*0.5));
+}
+for (let i=0;i<BUSH_MAX;i++){
+  const spot = findClearSpot(SITE_HALF*0.35, SITE_HALF*0.9, 0.9);
+  if (spot) bushList.push(buildBush(spot.x, spot.z, 0.7+Math.random()*0.6));
+}
+function applyVegetationQuality(presetName){
+  const counts = { low:{tree:0.4, bush:0.3}, standard:{tree:0.7, bush:0.6}, high:{tree:1, bush:1} };
+  const c = counts[presetName] || counts.standard;
+  treeList.forEach((t,i)=>{ t.visible = i < Math.round(TREE_MAX*c.tree); });
+  bushList.forEach((b,i)=>{ b.visible = i < Math.round(BUSH_MAX*c.bush); });
+}
+applyVegetationQuality('standard');
+
+// scattered natural rocks — instanced for performance
+const ROCK_MAX = 40;
+const rockGeo = new THREE.DodecahedronGeometry(0.14,0);
+const rockMat = new THREE.MeshStandardMaterial({ color:0x8a8478, roughness:0.95 });
+const rockMesh = new THREE.InstancedMesh(rockGeo, rockMat, ROCK_MAX);
+{
+  const dummy = new THREE.Object3D();
+  let placed = 0;
+  for (let i=0;i<ROCK_MAX;i++){
+    const spot = findClearSpot(3, SITE_HALF*0.98, 0.5);
+    if (!spot) continue;
+    const s = 0.6+Math.random()*0.8;
+    dummy.position.set(spot.x, 0.05*s, spot.z);
+    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    dummy.scale.set(s,s,s);
+    dummy.updateMatrix();
+    rockMesh.setMatrixAt(placed, dummy.matrix);
+    placed++;
+  }
+  rockMesh.count = placed;
+  rockMesh.instanceMatrix.needsUpdate = true;
+  rockMesh.castShadow = true; rockMesh.receiveShadow = true;
+  scene.add(rockMesh);
+}
+
+
+/* =========================================================================
+   GUIDANCE, MINIMAP, INSPECTION, AND EXCAVATION VISUALS
+   ========================================================================= */
+const mapCanvas = document.getElementById('miniMap');
+const mapCtx = mapCanvas.getContext('2d');
+let objectiveWorldMarker = null;
+function worldToMap(x,z){
+  const pad=12, span=SITE_HALF*2;
+  return { x:pad+((x+SITE_HALF)/span)*(mapCanvas.width-pad*2), y:pad+((z+SITE_HALF)/span)*(mapCanvas.height-pad*2) };
+}
+function drawMapMarker(x,z,label,color,shape='circle'){
+  const p=worldToMap(x,z); mapCtx.save(); mapCtx.fillStyle=color; mapCtx.strokeStyle='#241f18'; mapCtx.lineWidth=2;
+  if(shape==='square'){ mapCtx.fillRect(p.x-5,p.y-5,10,10); mapCtx.strokeRect(p.x-5,p.y-5,10,10); }
+  else { mapCtx.beginPath(); mapCtx.arc(p.x,p.y,5,0,Math.PI*2); mapCtx.fill(); mapCtx.stroke(); }
+  mapCtx.fillStyle='#241f18'; mapCtx.font='11px sans-serif'; mapCtx.fillText(label,p.x+8,p.y+4); mapCtx.restore();
+}
+function updateMiniMap(){
+  if(!mapCtx) return;
+  const w=mapCanvas.width,h=mapCanvas.height;
+  mapCtx.clearRect(0,0,w,h);
+  mapCtx.fillStyle='#888565'; mapCtx.fillRect(0,0,w,h);
+  const riverTop=worldToMap(0,-SITE_HALF+3).y;
+  mapCtx.fillStyle='#416f8c'; mapCtx.fillRect(0,0,w,riverTop);
+  mapCtx.fillStyle='#a8613d'; mapCtx.fillRect(0,riverTop-8,w,8);
+  const surveyA=worldToMap(-20,-8), surveyB=worldToMap(-8,7);
+  mapCtx.strokeStyle='#ead05d'; mapCtx.lineWidth=3; mapCtx.setLineDash([5,4]);
+  mapCtx.strokeRect(surveyA.x,surveyA.y,surveyB.x-surveyA.x,surveyB.y-surveyA.y); mapCtx.setLineDash([]);
+  drawMapMarker(0,SITE_HALF-6,'Camp','#d8cba0','square');
+  drawMapMarker(labTablePos.x,labTablePos.z,'Lab','#8aa7b8','square');
+  drawMapMarker(evidenceRoomPos.x,evidenceRoomPos.z,'Evidence','#b8825a','square');
+  Object.values(SiteConfig.units).forEach(u=>drawMapMarker(u.x,u.z,u.id==='unitA'?'A':'B',InvestigationState.chosenUnit===u.id?'#6fa889':'#c98a4a','square'));
+  const pp=worldToMap(player.pos.x,player.pos.z);
+  mapCtx.save(); mapCtx.translate(pp.x,pp.y); mapCtx.rotate(-player.yaw); mapCtx.fillStyle='#f0ede2'; mapCtx.strokeStyle='#241f18'; mapCtx.lineWidth=2;
+  mapCtx.beginPath(); mapCtx.moveTo(0,-8); mapCtx.lineTo(6,7); mapCtx.lineTo(0,4); mapCtx.lineTo(-6,7); mapCtx.closePath(); mapCtx.fill(); mapCtx.stroke(); mapCtx.restore();
+}
+function targetForObjective(){
+  if(!equipmentPrepared) return {x:0,z:SITE_HALF-6,label:'Field kit'};
+  if(InvestigationState.survey.flagged.length<SURVEY_ITEMS.length){
+    const next=surveyMeshes.find(s=>!s.flagged) || surveyMeshes[0];
+    return next?{x:next.mesh.position.x,z:next.mesh.position.z,label:'Next survey object'}:{x:-14,z:0,label:'Survey area'};
+  }
+  if(!InvestigationState.chosenUnit) return {x:1,z:8,label:'Excavation units'};
+  const chosenUnit = SiteConfig.units[InvestigationState.chosenUnit];
+  if(InvestigationState.excavation.levelsCompleted<activeExcavationSteps().length) return {x:chosenUnit.x,z:chosenUnit.z,label:'Excavation unit'};
+  if(!InvestigationState.artifacts.length) return {x:chosenUnit.x,z:chosenUnit.z,label:'Recovered artifact documentation'};
+  if(chosenPathRequiresFeature() && !InvestigationState.features.length) return {x:chosenUnit.x,z:chosenUnit.z,label:'Exposed feature'};
+  if(!InvestigationState.ethics.decisions.length) return {x:0,z:SITE_HALF-6,label:'Field supervisor'};
+  return {x:evidenceRoomPos.x,z:evidenceRoomPos.z,label:'Evidence Room'};
+}
+function faceTarget(target){
+  if(!target) return;
+  const dx=target.x-player.pos.x, dz=target.z-player.pos.z;
+  player.yaw=Math.atan2(-dx,-dz); player.pitch=0;
+  toast(`${target.label} is now centered. Follow the highlighted objective and site map.`);
+  if(objectiveWorldMarker) scene.remove(objectiveWorldMarker);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,8,24),new THREE.MeshBasicMaterial({color:0xffdf62,transparent:true,opacity:0.9}));
+  ring.rotation.x=Math.PI/2; ring.position.set(target.x,0.08,target.z); scene.add(ring); objectiveWorldMarker=ring;
+  setTimeout(()=>{ if(objectiveWorldMarker===ring){scene.remove(ring); objectiveWorldMarker=null;} },6000);
+}
+function resetView(){ player.pitch=0; const t=targetForObjective(); if(t) faceTarget(t); }
+function drawSurveyInspection(item){
+  const c=document.getElementById('surveyInspectCanvas'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const grad=ctx.createLinearGradient(0,0,0,c.height); grad.addColorStop(0,'#e7dfc8'); grad.addColorStop(1,'#b9aa8b'); ctx.fillStyle=grad; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='rgba(40,32,22,.12)'; ctx.beginPath(); ctx.ellipse(c.width/2,c.height*.75,120,22,0,0,Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(c.width/2,c.height/2); ctx.strokeStyle='#342d25'; ctx.lineWidth=5;
+  if(item.shape==='flake'){ ctx.fillStyle='#777b78'; ctx.beginPath();ctx.moveTo(-90,55);ctx.lineTo(-25,-75);ctx.lineTo(85,35);ctx.lineTo(25,70);ctx.closePath();ctx.fill();ctx.stroke();ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-25,-75);ctx.lineTo(10,25);ctx.lineTo(85,35);ctx.stroke(); }
+  else if(item.shape==='cobble'){ ctx.fillStyle='#8f816a';ctx.beginPath();ctx.ellipse(0,0,105,70,-.15,0,Math.PI*2);ctx.fill();ctx.stroke(); }
+  else if(item.shape==='sherd'){ ctx.fillStyle='#a86642';ctx.beginPath();ctx.arc(0,70,120,Math.PI*1.15,Math.PI*1.85);ctx.lineTo(60,-5);ctx.arc(0,70,70,Math.PI*1.8,Math.PI*1.2,true);ctx.closePath();ctx.fill();ctx.stroke();ctx.lineWidth=2;for(let x=-50;x<=50;x+=20){ctx.beginPath();ctx.moveTo(x,-15);ctx.lineTo(x+18,30);ctx.stroke();} }
+  else if(item.shape==='fcr'){ ctx.fillStyle='#8a5141';ctx.beginPath();ctx.moveTo(-90,15);ctx.lineTo(-50,-65);ctx.lineTo(35,-75);ctx.lineTo(95,-10);ctx.lineTo(45,70);ctx.lineTo(-55,65);ctx.closePath();ctx.fill();ctx.stroke();ctx.lineWidth=2;for(let i=-45;i<=45;i+=30){ctx.beginPath();ctx.moveTo(i,-40);ctx.lineTo(i+25,45);ctx.stroke();} }
+  else { ctx.fillStyle='#aeb5b7';ctx.beginPath();ctx.moveTo(-85,-45);ctx.quadraticCurveTo(0,-75,85,-30);ctx.lineTo(70,50);ctx.quadraticCurveTo(0,80,-75,45);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#8e4d3b';ctx.fillRect(-70,-5,140,16); }
+  ctx.restore();
+  ctx.fillStyle='#332b22';ctx.font='16px sans-serif';ctx.fillText('Visual inspection — rotate mentally using shape, surface, and edges',18,24);
+  ctx.font='14px sans-serif';ctx.fillText('Scale bar: 10 cm',18,c.height-18);ctx.fillStyle='#222';ctx.fillRect(125,c.height-28,120,8);ctx.fillStyle='#eee';ctx.fillRect(125,c.height-28,60,8);
+}
+function updateExcavationVisuals(unitId,level){
+  const state=excavationVisualState[unitId]; if(!state) return;
+  state.level=level; const floorY=-0.32-Math.min(level,3)*0.18; state.floor.position.y=floorY;
+  state.discoveryGroup.position.y=floorY+0.05;
+  while(state.discoveryGroup.children.length) state.discoveryGroup.remove(state.discoveryGroup.children[0]);
+  state.spoil.scale.setScalar(1+level*0.18);
+  if(level>=2){
+    const artifactMat=new THREE.MeshStandardMaterial({color:unitId==='unitA'?0xa86642:0x2f2a25,roughness:.8});
+    const artifact=unitId==='unitA'?new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.035,12,1,true,0,Math.PI*.7),artifactMat):new THREE.Mesh(new THREE.BoxGeometry(.22,.035,.08),artifactMat);
+    artifact.rotation.x=Math.PI/2; artifact.position.set(.25,.02,-.15); state.discoveryGroup.add(artifact);
+  }
+  if(level>=3 && unitId==='unitA'){
+    const stain=new THREE.Mesh(new THREE.CircleGeometry(.48,24),new THREE.MeshStandardMaterial({color:0x2c241d,roughness:1,side:THREE.DoubleSide})); stain.rotation.x=-Math.PI/2; stain.position.set(-.2,.012,.15); state.discoveryGroup.add(stain);
+    for(let i=0;i<7;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.08,0),new THREE.MeshStandardMaterial({color:0x7c4e3d,roughness:1})); const a=i/7*Math.PI*2;r.position.set(-.2+Math.cos(a)*.35,.06,.15+Math.sin(a)*.35);state.discoveryGroup.add(r); }
+  }
+}
+
+/* =========================================================================
+   PLAYER CONTROLLER
+   ========================================================================= */
+const player = { pos:new THREE.Vector3(0,1.65,22), yaw:Math.PI, pitch:0, bobTime:0, vel:new THREE.Vector3() };
+const settings = { sensitivity:1, cameraBob:true };
+const MAX_SPEED=4.2, ACCEL=18, DECEL=14;
+const keys = {};
+let pointerLocked = false;
+document.addEventListener('keydown', e=>{ keys[e.code]=true; });
+document.addEventListener('keyup', e=>{ keys[e.code]=false; });
+let dragLook=false, dragMoved=false, dragX=0, dragY=0;
+renderer.domElement.addEventListener('mousedown', e=>{ if(anyPanelOpen()||isMobile()) return; dragLook=true; dragMoved=false; dragX=e.clientX; dragY=e.clientY; });
+window.addEventListener('mousemove', e=>{
+  if (pointerLocked){ player.yaw -= e.movementX*0.0022*settings.sensitivity; player.pitch -= e.movementY*0.0022*settings.sensitivity; }
+  else if (dragLook){ const dx=e.clientX-dragX, dy=e.clientY-dragY; if(Math.abs(dx)+Math.abs(dy)>3) dragMoved=true; player.yaw-=dx*.004*settings.sensitivity; player.pitch-=dy*.004*settings.sensitivity; dragX=e.clientX; dragY=e.clientY; }
+  player.pitch=Math.max(-1.1,Math.min(1.1,player.pitch));
+});
+window.addEventListener('mouseup', e=>{
+  if(!dragLook) return; dragLook=false;
+  if(!dragMoved && !anyPanelOpen()){ const f=focusedInteractableFromPointer(e.clientX,e.clientY); if(f) triggerInteraction(f); else if(!pointerLocked) renderer.domElement.requestPointerLock(); }
+});
+document.addEventListener('pointerlockchange', ()=>{ pointerLocked = document.pointerLockElement === renderer.domElement; });
+function isMobile(){ return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth<780; }
+
+const PLAYER_RADIUS = 0.35; // treat the player as a small disc, not a single point
+function pointBlocked(x,z){
+  for (const b of collisionBounds.values()){
+    if (x > b.minX-PLAYER_RADIUS && x < b.maxX+PLAYER_RADIUS && z > b.minZ-PLAYER_RADIUS && z < b.maxZ+PLAYER_RADIUS) return true;
+  }
+  return false;
+}
+// Resolves movement one axis at a time (try X, then Z) so the learner slides
+// along an obstacle's edge instead of sticking dead the instant either axis
+// alone would clip into it — fixes the "sticky corners" behavior of the
+// previous all-or-nothing collision check.
+function collideAndClamp(nx,nz){
+  const maxC = SITE_HALF-1.0;
+  let x = player.pos.x, z = player.pos.z;
+  const clampedX = Math.max(-maxC,Math.min(maxC,nx));
+  const clampedZ = Math.max(-maxC,Math.min(maxC,nz));
+  if (!pointBlocked(clampedX, z)) x = clampedX;
+  if (!pointBlocked(x, clampedZ)) z = clampedZ;
+  return {x,z};
+}
+const mobileMove = { active:false, x:0, y:0 };
+const mobileLook = { active:false, dx:0, dy:0 };
+function updatePlayer(dt){
+  let inputForward=0, inputRight=0;
+  if (keys['KeyW']||keys['ArrowUp']) inputForward+=1;
+  if (keys['KeyS']||keys['ArrowDown']) inputForward-=1;
+  if (keys['KeyD']) inputRight+=1;
+  if (keys['KeyA']) inputRight-=1;
+  if (keys['ArrowLeft']||keys['KeyQ']) player.yaw += 1.9*dt;
+  if (keys['ArrowRight']) player.yaw -= 1.9*dt;
+  if (mobileMove.active){ inputRight=mobileMove.x; inputForward=-mobileMove.y; }
+  const len = Math.hypot(inputForward,inputRight);
+  let desiredX=0, desiredZ=0;
+  if (len>0.001){
+    const nF=inputForward/len, nR=inputRight/len;
+    const forward = new THREE.Vector3(-Math.sin(player.yaw),0,-Math.cos(player.yaw));
+    const right = new THREE.Vector3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
+    desiredX=(forward.x*nF+right.x*nR)*MAX_SPEED; desiredZ=(forward.z*nF+right.z*nR)*MAX_SPEED;
+  }
+  const rate = (desiredX===0&&desiredZ===0) ? DECEL : ACCEL;
+  player.vel.x += (desiredX-player.vel.x)*Math.min(1,rate*dt);
+  player.vel.z += (desiredZ-player.vel.z)*Math.min(1,rate*dt);
+  if (Math.hypot(player.vel.x,player.vel.z) > 0.02){
+    const r = collideAndClamp(player.pos.x+player.vel.x*dt, player.pos.z+player.vel.z*dt);
+    player.pos.x=r.x; player.pos.z=r.z; player.bobTime += dt*8;
+  }
+  if (mobileLook.active){
+    player.yaw -= mobileLook.dx*dt*2.6*settings.sensitivity;
+    player.pitch -= mobileLook.dy*dt*2.6*settings.sensitivity;
+    player.pitch = Math.max(-1.1,Math.min(1.1,player.pitch));
+    mobileLook.dx=0; mobileLook.dy=0;
+  }
+  const bob = settings.cameraBob && !prefersReducedMotion ? Math.sin(player.bobTime)*0.03 : 0;
+  camera.position.set(player.pos.x, 1.65+bob, player.pos.z);
+  camera.rotation.order="YXZ"; camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
+}
+function setupJoystick(baseEl, stickEl, state){
+  let originX=0, originY=0, touchId=null; const maxDist=40;
+  baseEl.addEventListener('touchstart', e=>{ const t=e.changedTouches[0]; touchId=t.identifier; const rect=baseEl.getBoundingClientRect(); originX=rect.left+rect.width/2; originY=rect.top+rect.height/2; state.active=true; e.preventDefault(); }, {passive:false});
+  baseEl.addEventListener('touchmove', e=>{
+    for (const t of e.changedTouches){ if (t.identifier===touchId){ let dx=t.clientX-originX, dy=t.clientY-originY; const dist=Math.hypot(dx,dy); if (dist>maxDist){dx=dx/dist*maxDist;dy=dy/dist*maxDist;} stickEl.style.left=(29+dx)+"px"; stickEl.style.top=(29+dy)+"px"; state.x=dx/maxDist; state.y=dy/maxDist; } }
+    e.preventDefault();
+  }, {passive:false});
+  function end(e){ for (const t of e.changedTouches){ if (t.identifier===touchId){ touchId=null; state.active=false; state.x=0; state.y=0; stickEl.style.left="29px"; stickEl.style.top="29px"; } } }
+  baseEl.addEventListener('touchend', end); baseEl.addEventListener('touchcancel', end);
+}
+function setupLookZone(el, state){
+  let touchId=null, lastX=0, lastY=0;
+  el.addEventListener('touchstart', e=>{ const t=e.changedTouches[0]; touchId=t.identifier; lastX=t.clientX; lastY=t.clientY; state.active=true; }, {passive:true});
+  el.addEventListener('touchmove', e=>{ for (const t of e.changedTouches){ if (t.identifier===touchId){ state.dx += (t.clientX-lastX)*4; state.dy += (t.clientY-lastY)*4; lastX=t.clientX; lastY=t.clientY; } } }, {passive:true});
+  function end(e){ for (const t of e.changedTouches){ if (t.identifier===touchId){ touchId=null; state.active=false; } } }
+  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+}
+
+/* =========================================================================
+   INTERACTION SYSTEM — a single raycaster-based "what am I looking at"
+   check that resolves to one of several interactable kinds spread across
+   the site (survey item, unit plug/pit, screen, lab table, evidence
+   kiosk, supervisor desk). Uses real mesh intersection (raycaster.intersectObjects
+   against a registry of interactive objects, each tagged with
+   userData.interaction), not distance-plus-viewing-angle heuristics.
+   ========================================================================= */
+const raycaster = new THREE.Raycaster();
+const screenCenter = new THREE.Vector2(0,0);
+const PROXIMITY_RANGE = 4.0;
+// interactiveMeshes / registerInteractive / findInteractionMeta are declared
+// earlier (alongside collisionBounds), before site construction needs them.
+
+// Maps a {kind,id} hit back into the richer object each station handler expects.
+// Returns null if that interactive is no longer valid (already flagged, unit
+// already chosen elsewhere, etc.) so a stale mesh can't be re-triggered.
+function resolveInteractable(meta){
+  if (meta.kind==='survey'){
+    const sm = surveyMeshes.find(s=>s.item.id===meta.id);
+    return (sm && !sm.flagged) ? { kind:'survey', ref:sm } : null;
+  }
+  if (meta.kind==='unitPlug') return !InvestigationState.chosenUnit ? { kind:'unitPlug', ref:SiteConfig.units[meta.id] } : null;
+  if (meta.kind==='pit') return InvestigationState.chosenUnit===meta.id ? { kind:'pit', ref:SiteConfig.units[meta.id] } : null;
+  if (meta.kind==='screen') return { kind:'screen' };
+  if (meta.kind==='lab') return { kind:'lab' };
+  if (meta.kind==='evidence') return { kind:'evidence' };
+  if (meta.kind==='supervisor') return { kind:'supervisor' };
+  return null;
+}
+// NOTE (disclosed simplification): this checks real mesh intersection and a
+// range limit, but does not additionally test whether an unrelated piece of
+// scene geometry (e.g. the ground plane grazed at a shallow angle) occludes
+// the target — implementing pixel-perfect occlusion against the ground for
+// knee-high survey markers made them impractically hard to select in testing
+// of the underlying approach, so full scene-occlusion testing is deferred.
+let lastRawHit = null;
+function focusedInteractableFromPointer(clientX, clientY){
+  const rect=renderer.domElement.getBoundingClientRect();
+  const p=new THREE.Vector2(((clientX-rect.left)/rect.width)*2-1,-((clientY-rect.top)/rect.height)*2+1);
+  raycaster.setFromCamera(p,camera);
+  const hits=raycaster.intersectObjects(interactiveMeshes,true);
+  for(const hit of hits){ if(hit.distance>PROXIMITY_RANGE+2) continue; const meta=findInteractionMeta(hit.object); if(meta){ const resolved=resolveInteractable(meta); if(resolved) return resolved; } }
+  return null;
+}
+function focusedInteractable(){
+  raycaster.setFromCamera(screenCenter, camera);
+  const hits = raycaster.intersectObjects(interactiveMeshes, true);
+  for (const hit of hits){
+    if (hit.distance > PROXIMITY_RANGE) continue;
+    const meta = findInteractionMeta(hit.object);
+    if (meta){ const resolved = resolveInteractable(meta); if (resolved){ lastRawHit = hit.object; return resolved; } }
+  }
+  lastRawHit = null;
+  return null;
+}
+// Subtle highlight on whatever mesh is actually under the crosshair — a
+// restrained emissive tint, not a bright glow, so survey evidence is easier
+// to locate without reading as a collectible game token.
+let highlightedMesh = null;
+function setHighlight(mesh){
+  if (highlightedMesh === mesh) return;
+  if (highlightedMesh && highlightedMesh.material && highlightedMesh.material.emissive){
+    highlightedMesh.material.emissive.setHex(highlightedMesh.userData._origEmissive ?? 0x000000);
+    highlightedMesh.material.emissiveIntensity = highlightedMesh.userData._origEmissiveIntensity ?? 1;
+  }
+  highlightedMesh = mesh;
+  if (mesh && mesh.material && mesh.material.emissive){
+    if (mesh.userData._origEmissive === undefined) mesh.userData._origEmissive = mesh.material.emissive.getHex();
+    if (mesh.userData._origEmissiveIntensity === undefined) mesh.userData._origEmissiveIntensity = mesh.material.emissiveIntensity;
+    mesh.material.emissive.setHex(0xc98a4a);
+    mesh.material.emissiveIntensity = 0.3;
+  }
+}
+function surveyIndexLabel(id){ return `Surface Object ${SURVEY_ITEMS.findIndex(s=>s.id===id)+1}`; }
+function labelFor(focused){
+  if (focused.kind==='survey') return `Examine ${surveyIndexLabel(focused.ref.item.id)}`;
+  if (focused.kind==='unitPlug') return `Consider excavating ${focused.ref.label}`;
+  if (focused.kind==='pit') return `Continue excavating`;
+  if (focused.kind==='screen') return `Screening station`;
+  if (focused.kind==='lab') return `Field Laboratory`;
+  if (focused.kind==='evidence') return `Evidence Room`;
+  if (focused.kind==='supervisor') return `Talk to ${SiteConfig.supervisorName}`;
+  return `Interact`;
+}
+function updateInteractionPrompt(){
+  const focused = focusedInteractable();
+  const promptEl = document.getElementById('interactPrompt');
+  const mobileBtn = document.getElementById('mobileInteract');
+  const crosshair = document.getElementById('crosshair');
+  if (focused && !anyPanelOpen()){
+    promptEl.style.display = isMobile() ? 'none' : 'block';
+    promptEl.innerHTML = `Press <b>E</b> to ${labelFor(focused)}`;
+    crosshair.classList.add('focused');
+    if (isMobile()) mobileBtn.style.display='flex';
+    setHighlight(lastRawHit);
+  } else {
+    promptEl.style.display='none'; crosshair.classList.remove('focused');
+    if (isMobile()) mobileBtn.style.display='none';
+    setHighlight(null);
+  }
+  return focused;
+}
+let lastFocused = null;
+document.addEventListener('keydown', e=>{
+  if (['KeyE','Enter','Space'].includes(e.code) && !ModalManager.anyOpen()){ const f=focusedInteractable(); if (f){ e.preventDefault(); triggerInteraction(f); } }
+  if (e.code==='Escape'){ ModalManager.handleEscape(); }
+  if (e.code==='KeyR' && !ModalManager.anyOpen()) resetView();
+});
+document.getElementById('mobileInteract').addEventListener('click', ()=>{ const f=focusedInteractable(); if (f && !ModalManager.anyOpen()) triggerInteraction(f); });
+
+/* =========================================================================
+   MODAL MANAGER — centralized panel control: focus trapping, focus
+   restoration on close, a dismissible flag so required decisions can't be
+   Escape-bypassed, and onComplete/onClose hooks. openPanel/closePanel below
+   are thin compatibility wrappers so the many existing call sites keep
+   working unchanged; call sites that must not be dismissed until resolved
+   (briefing, artifact documentation, feature interpretation, ethics) pass
+   {dismissible:false} explicitly.
+   ========================================================================= */
+const ModalManager = (function(){
+  let stack = [];
+  function focusablesIn(el){
+    return [...el.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+  }
+  function trapFocus(el){
+    el.onkeydown = function(e){
+      if (e.key !== 'Tab') return;
+      const f = focusablesIn(el);
+      if (!f.length) return;
+      const first=f[0], last=f[f.length-1];
+      if (e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    };
+  }
+  function open(opts){
+    if (typeof opts === 'string') opts = { id: opts };
+    const { id, dismissible=true, initialFocus=null, onClose=null, onComplete=null } = opts;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (stack.some(m=>m.id===id)) return; // already open
+    const previousFocus = document.activeElement;
+    el.classList.add('open');
+    el.setAttribute('aria-modal','true');
+    if (!el.getAttribute('role')) el.setAttribute('role','dialog');
+    // Associate the modal with its own heading for screen readers, rather
+    // than leaving it unlabeled — auto-generates a stable id on the first
+    // heading found inside the panel if it doesn't already have one.
+    if (!el.getAttribute('aria-labelledby')){
+      const heading = el.querySelector('h2, h3');
+      if (heading){
+        if (!heading.id) heading.id = id + '-heading';
+        el.setAttribute('aria-labelledby', heading.id);
+      }
+    }
+    if (document.pointerLockElement) document.exitPointerLock();
+    stack.push({ id, dismissible, onClose, onComplete, previousFocus, el });
+    trapFocus(el);
+    requestAnimationFrame(()=>{
+      const target = (initialFocus && el.querySelector(initialFocus)) || focusablesIn(el)[0];
+      if (target) target.focus();
+    });
+  }
+  function close(id, opts={}){
+    const idx = stack.findIndex(m=>m.id===id);
+    if (idx===-1) return;
+    const modal = stack[idx];
+    modal.el.classList.remove('open');
+    modal.el.onkeydown = null;
+    stack.splice(idx,1);
+    if (modal.previousFocus && typeof modal.previousFocus.focus==='function') modal.previousFocus.focus();
+    if (opts.viaComplete && modal.onComplete) modal.onComplete();
+    if (modal.onClose) modal.onClose();
+  }
+  function topModal(){ return stack[stack.length-1] || null; }
+  function isOpen(id){ return stack.some(m=>m.id===id); }
+  function anyOpen(){ return stack.length>0; }
+  function handleEscape(){
+    const top = topModal();
+    if (!top){ if (document.pointerLockElement) document.exitPointerLock(); return; }
+    if (top.dismissible) close(top.id);
+    // non-dismissible modals (a required decision in progress) simply don't close — this is the fix for "Escape bypasses required workflows"
+  }
+  return { open, close, isOpen, anyOpen, handleEscape };
+})();
+function openPanel(id, opts={}){ ModalManager.open(Object.assign({ id }, opts)); }
+function closePanel(id, opts={}){ ModalManager.close(id, opts); }
+function anyPanelOpen(){ return ModalManager.anyOpen(); }
+
+let equipmentPrepared = false;
+function triggerInteraction(focused){
+  if (focused.kind==='survey') openSurveyItem(focused.ref);
+  else if (focused.kind==='unitPlug') openUnitChoice();
+  else if (focused.kind==='pit') openExcavationStep();
+  else if (focused.kind==='screen') toast("Backdirt from the unit gets screened here — the choice to screen happens during excavation itself.");
+  else if (focused.kind==='lab') openLab();
+  else if (focused.kind==='evidence') openEvidenceRoom();
+  else if (focused.kind==='supervisor') openSupervisor();
+}
+
+function openSupervisor(){
+  if (!equipmentPrepared){ openPanel('equipmentOverlay'); renderEquipmentGrid(); return; }
+  if (!InvestigationState.ethics.decisions.length && InvestigationState.excavation.levelsCompleted >= 2){
+    openEthicsScenario(); return;
+  }
+  toast(`${SiteConfig.supervisorName}: "Keep at it — check your notebook if you need a reminder of what's left."`);
+}
+
+/* ---- Station 1: Equipment ---- */
+function renderEquipmentGrid(){
+  const grid = document.getElementById('equipmentGrid');
+  grid.innerHTML='';
+  EQUIPMENT_ITEMS.forEach(item=>{
+    const selected = InvestigationState.equipment.selected.includes(item.id);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'itemCard' + (selected ? ' selected' : '');
+    card.setAttribute('aria-pressed', String(selected));
+    const iconSpan = document.createElement('span'); iconSpan.className='ic'; iconSpan.textContent = item.icon;
+    card.appendChild(iconSpan);
+    card.appendChild(document.createTextNode(item.label));
+    card.addEventListener('click', ()=>toggleEquipment(item, card));
+    grid.appendChild(card);
+  });
+}
+function toggleEquipment(item, card){
+  const idx = InvestigationState.equipment.selected.indexOf(item.id);
+  const willSelect = idx===-1;
+  if (willSelect) InvestigationState.equipment.selected.push(item.id);
+  else InvestigationState.equipment.selected.splice(idx,1);
+  card.classList.toggle('selected', willSelect);
+  card.setAttribute('aria-pressed', String(willSelect));
+  Telemetry.record(item.id, 'selected', { included: willSelect });
+  if (willSelect && item.justify && EQUIPMENT_JUSTIFY[item.id]){
+    showJustifyPrompt(item);
+  }
+}
+function showJustifyPrompt(item){
+  const box = document.getElementById('equipmentJustify');
+  const data = EQUIPMENT_JUSTIFY[item.id];
+  box.style.display='block';
+  box.innerHTML = `<b>${item.label}:</b> ${data.prompt}<div class="justifyChoices"></div>`;
+  const choicesEl = box.querySelector('.justifyChoices');
+  data.choices.forEach(c=>{
+    const btn = document.createElement('button'); btn.type='button'; btn.textContent=c.text;
+    btn.addEventListener('click', ()=>{
+      choicesEl.querySelectorAll('button').forEach(b=>b.classList.remove('correctChoice','wrongChoice'));
+      btn.classList.add(c.correct?'correctChoice':'wrongChoice');
+      InvestigationState.equipment.justifications[item.id] = { text:c.text, correct:c.correct };
+      Telemetry.record(item.id,'classified',{ justificationCorrect:c.correct });
+      const fb = document.createElement('div'); fb.style.marginTop='6px'; fb.style.fontSize='.78rem'; fb.textContent = c.feedback;
+      box.appendChild(fb);
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+document.getElementById('prepareKitBtn').addEventListener('click', ()=>{
+  const missingAppropriate = EQUIPMENT_ITEMS.filter(i=>i.appropriate && !InvestigationState.equipment.selected.includes(i.id));
+  const includedInappropriate = EQUIPMENT_ITEMS.filter(i=>!i.appropriate && InvestigationState.equipment.selected.includes(i.id));
+  equipmentPrepared = true;
+  Telemetry.record('equipment_kit','completed',{ missing:missingAppropriate.length, wrong:includedInappropriate.length });
+  let msg = `${SiteConfig.supervisorName}: `;
+  if (!missingAppropriate.length && !includedInappropriate.length) msg += "Solid kit — everything you need, nothing you don't. Let's head out.";
+  else {
+    if (includedInappropriate.length) msg += `A few of those don't belong on this project (${includedInappropriate.map(i=>i.label).join(', ')}). `;
+    if (missingAppropriate.length) msg += `You're missing a few useful items too (${missingAppropriate.slice(0,3).map(i=>i.label).join(', ')}${missingAppropriate.length>3?', …':''}). `;
+    msg += "We'll manage, but plan better next time.";
+  }
+  closePanel('equipmentOverlay');
+  showBriefing("Supervisor Feedback", msg, ()=>{});
+});
+document.getElementById('closeEquipmentBtn').addEventListener('click', ()=>closePanel('equipmentOverlay'));
+
+/* ---- Station 2: Survey ---- */
+function openSurveyItem(sm){
+  openPanel('surveyOverlay', { initialFocus:'#surveyChoices button' });
+  document.getElementById('surveyItemName').textContent = surveyIndexLabel(sm.item.id);
+  document.getElementById('surveyItemDesc').textContent = sm.item.desc;
+  drawSurveyInspection(sm.item);
+  const choicesEl = document.getElementById('surveyChoices');
+  choicesEl.innerHTML='';
+  document.getElementById('surveyFeedback').textContent='';
+  [["Flag as archaeological evidence", true], ["Leave it — not archaeological", false]].forEach(([label,callEvidence])=>{
+    const btn = document.createElement('button'); btn.textContent=label;
+    btn.addEventListener('click', ()=>{
+      const correct = callEvidence === sm.item.isEvidence;
+      choicesEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+      btn.classList.add(correct?'correctChoice':'wrongChoice');
+      // Identity is only revealed now, after classification, and the
+      // feedback message matches whether the learner was actually right —
+      // previously this always showed the same (correct-sounding) text
+      // regardless of the answer given.
+      document.getElementById('surveyItemName').textContent = `${surveyIndexLabel(sm.item.id)}: ${sm.item.name}`;
+      document.getElementById('surveyFeedback').textContent = correct ? sm.item.feedback.correct : sm.item.feedback.incorrect;
+      sm.flagged = true;
+      if (sm.artifactMesh && sm.artifactMesh.material && sm.artifactMesh.material.color) sm.artifactMesh.material.color.set(correct ? 0x6fa889 : 0xc9614f);
+      InvestigationState.survey.flagged.push({ id:sm.item.id, name:sm.item.name, calledEvidence:callEvidence, actuallyEvidence:sm.item.isEvidence, correct });
+      Telemetry.record(sm.item.id,'observed',{ calledEvidence, correct });
+      refreshHUD();
+      refreshObjective();
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+document.getElementById('closeSurveyBtn').addEventListener('click', ()=>closePanel('surveyOverlay'));
+
+/* ---- Unit choice ---- */
+function openUnitChoice(){
+  openPanel('unitChoiceOverlay');
+  const list = document.getElementById('unitChoiceList');
+  list.innerHTML='';
+  if (InvestigationState.chosenUnit){
+    list.innerHTML = `<p>You've already committed to ${SiteConfig.units[InvestigationState.chosenUnit].label}. With three weeks total, there's no time to open a second unit right now.</p>`;
+    return;
+  }
+  Object.values(SiteConfig.units).forEach(u=>{
+    const row = document.createElement('div'); row.className='evRow'; row.style.flexDirection='column'; row.style.alignItems='stretch'; row.style.gap='8px';
+    row.innerHTML = `<b>${u.label}</b><span style="color:var(--text-dim);font-size:.8rem;">${u.hint}</span>`;
+    const btn = document.createElement('button'); btn.className='btn'; btn.style.marginTop='6px'; btn.textContent='Choose this unit (–4 project days)';
+    btn.addEventListener('click', ()=>chooseUnit(u.id));
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+function chooseUnit(id){
+  InvestigationState.chosenUnit = id;
+  const u = SiteConfig.units[id];
+  Telemetry.record(id,'selected',{ station:'excavation_unit' });
+  daysCost(`Opened ${u.label}`, 4);
+  // Remove the plug: its mesh, its collision box, AND its interactive
+  // registration (this was the reported defect — the collision box and a
+  // stale raycast target both used to survive after the plug was removed).
+  scene.remove(unitPlugs[id].group);
+  unregisterInteractive(unitPlugs[id].group);
+  removeCollisionBox('plug-'+id);
+  buildOpenedPit(u, id==='unitB' ? { charcoalStain:true } : {});
+  updateExcavationVisuals(id,0);
+  addPitEdgeCollisions(u);
+  closePanel('unitChoiceOverlay');
+  refreshHUD();
+  showBriefing("Unit Opened", `${u.label} is open. Approach it and press E to begin excavating, level by level.`, ()=>{});
+}
+document.getElementById('closeUnitChoiceBtn').addEventListener('click', ()=>closePanel('unitChoiceOverlay'));
+
+/* ---- Station 3: Excavation ---- */
+const EXCAVATION_STEPS_BY_UNIT = {
+  // Unit A — Artifact Concentration: domestic/activity-area evidence,
+  // building toward household activity, food preparation, and tool
+  // production as possible interpretations.
+  unitA: [
+    { level:1, desc:"Level 1 (0–10 cm): Dense, dark topsoil, already showing flecks of stone debris even before careful troweling.",
+      choices:[
+        { text:"Trowel carefully and screen all the backdirt", correct:true, screens:true,
+          feedback:"Good call — a scatter this dense means small debitage and beads are likely, and screening is how you'll actually recover them." },
+        { text:"Trowel quickly and skip screening to save a little time", correct:false, screens:false,
+          feedback:"In a dense activity area like this, skipping the screen is especially costly — small debitage and beads are easy to miss by eye." }
+      ] },
+    { level:2, desc:"Level 2 (10–20 cm): The soil shifts to a lighter brown, dense with lithic debitage. A curved fragment of fired clay is emerging from the unit wall.",
+      find:{ type:'artifact', id:'sherd1', name:'Pottery Sherd', desc:'A pottery sherd is emerging from the unit wall, still partly embedded in the soil, surrounded by small flakes of stone debitage.' } },
+    { level:3, desc:"Level 3 (20–30 cm): A cluster of fire-cracked rock and a dark, ash-stained soil patch fills much of the unit floor — and a small, deeper dark stain in one corner looks like it could be a post mold.",
+      find:{ type:'feature', id:'hearth1' } }
+  ],
+  // Unit B — Bluff-Edge Profile: chronology and site-formation evidence,
+  // building toward multiple occupations, erosion effects, and disturbance.
+  unitB: [
+    { level:1, desc:"Level 1 (0–10 cm): The unit sits right at the eroding bluff edge — one wall is already visibly undercut by the river below.",
+      choices:[
+        { text:"Stabilize the undercut wall before continuing (–1 project day)", correct:true, screens:true,
+          feedback:"Good judgment — working a badly undercut wall risks a collapse that could destroy the very sequence you're trying to record, and it costs you a day, not the investigation.", cost:1 },
+        { text:"Continue excavating without addressing the undercut wall", correct:false, screens:false,
+          feedback:"It saves a day now, but an unstable profile wall risks collapsing mid-excavation — losing the stratigraphic sequence this unit exists to capture." }
+      ] },
+    { level:2, desc:"Level 2 (10–20 cm): A distinct reddish clay lens appears, with a small dark charcoal lens within it — a strong dating candidate if collected properly.",
+      choices:[
+        { text:"Collect the charcoal sample with clean tools directly into a labeled sample bag", correct:true, screens:true,
+          feedback:"This is exactly how a usable radiocarbon sample is collected — clean handling and immediate labeling avoid contamination that would undermine the date." },
+        { text:"Scoop it up quickly with the same trowel used on the topsoil and bag it later", correct:false, screens:false,
+          feedback:"Using a soil-contaminated tool and delaying labeling risks contaminating the sample — a lab may still run it, but the date will carry a contamination warning." }
+      ] },
+    { level:3, desc:"Level 3 (20–30 cm): Beneath the clay lens, a rusted metal fragment sits mixed in with otherwise prehistoric-looking soil — likely intrusive historic material rather than part of the original deposit.",
+      find:{ type:'artifact', id:'intrusive1', name:'Intrusive Metal Fragment', desc:'A small, heavily rusted metal fragment sits within an otherwise prehistoric soil matrix — its position looks disturbed rather than originally deposited here.' } }
+  ]
+};
+function activeExcavationSteps(){ return InvestigationState.chosenUnit ? EXCAVATION_STEPS_BY_UNIT[InvestigationState.chosenUnit] : []; }
+let excavationStepIndex = 0;
+function openExcavationStep(){
+  openPanel('excavationOverlay');
+  document.getElementById('excavationUnitTitle').textContent = `Excavating ${SiteConfig.units[InvestigationState.chosenUnit].label}`;
+  document.getElementById('excavationFeedback').textContent='';
+  document.getElementById('closeExcavationBtn').style.display='none';
+  renderExcavationStep();
+}
+function renderExcavationStep(){
+  const steps = activeExcavationSteps();
+  const descEl = document.getElementById('excavationLevelDesc');
+  const choicesEl = document.getElementById('excavationChoices');
+  choicesEl.innerHTML='';
+  if (excavationStepIndex >= steps.length){
+    descEl.textContent = "This unit has reached a reasonable stopping depth for this phase — sterile soil is starting to appear.";
+    document.getElementById('closeExcavationBtn').style.display='inline-block';
+    document.getElementById('closeExcavationBtn').textContent = 'Return to Site';
+    return;
+  }
+  const step = steps[excavationStepIndex];
+  descEl.textContent = step.desc;
+  if (step.choices){
+    step.choices.forEach(c=>{
+      const btn = document.createElement('button'); btn.textContent=c.text;
+      btn.addEventListener('click', ()=>{
+        choicesEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+        btn.classList.add(c.correct?'correctChoice':'wrongChoice');
+        document.getElementById('excavationFeedback').textContent = c.feedback;
+        InvestigationState.excavation.decisions.push({ level:step.level, choice:c.text, correct:c.correct });
+        if (c.screens !== undefined){
+          InvestigationState.excavation.screened = InvestigationState.excavation.screened || c.screens;
+          if (!c.screens && InvestigationState.chosenUnit==='unitA') InvestigationState.artifactsMissed.push({ name:"Shell Bead", reason:"Level 1 backdirt was not screened." });
+        }
+        if (c.cost) daysCost(`Excavation decision: ${c.text}`, c.cost);
+        Telemetry.record(`level${step.level}`,'documented',{ correct:c.correct });
+        refreshHUD();
+        setTimeout(()=>{ advanceExcavationStep(); }, 1300);
+      });
+      choicesEl.appendChild(btn);
+    });
+  } else if (step.find){
+    const btn = document.createElement('button');
+    btn.textContent = step.find.type==='artifact' ? "Examine the emerging find" : "Examine this feature";
+    btn.addEventListener('click', ()=>{
+      closePanel('excavationOverlay');
+      if (step.find.type==='artifact') openArtifactDoc(step.find, ()=>{ advanceExcavationStep(); openExcavationStep(); });
+      else openFeatureInterpretation(step.find, ()=>{ advanceExcavationStep(); openExcavationStep(); });
+    });
+    choicesEl.appendChild(btn);
+  }
+}
+function advanceExcavationStep(){
+  excavationStepIndex++;
+  InvestigationState.excavation.levelsCompleted = excavationStepIndex;
+  if (InvestigationState.chosenUnit) updateExcavationVisuals(InvestigationState.chosenUnit, excavationStepIndex);
+  refreshHUD();
+  if (document.getElementById('excavationOverlay').classList.contains('open')) renderExcavationStep();
+}
+document.getElementById('closeExcavationBtn').addEventListener('click', ()=>closePanel('excavationOverlay'));
+
+/* ---- Artifact documentation decision ---- */
+function openArtifactDoc(findMeta, onDone){
+  openPanel('artifactDocOverlay', { dismissible:false, initialFocus:'#artifactDocChoices button' });
+  document.getElementById('artifactDocTitle').textContent = findMeta.name;
+  document.getElementById('artifactDocDesc').textContent = findMeta.desc;
+  const choicesEl = document.getElementById('artifactDocChoices'); choicesEl.innerHTML='';
+  document.getElementById('artifactDocFeedback').textContent='';
+  const options = [
+    { text:"Record its exact location and photograph it in place, then bag and tag it", correct:true, provenance:'good',
+      feedback:"Its provenience is now fully documented — this artifact will carry full interpretive weight in your final analysis." },
+    { text:"Bag it now and keep moving to save time", correct:false, provenance:'poor',
+      feedback:"You have the object, but without recorded provenience it will carry much less interpretive weight later." }
+  ];
+  options.forEach(opt=>{
+    const btn=document.createElement('button'); btn.textContent=opt.text;
+    btn.addEventListener('click', ()=>{
+      choicesEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+      btn.classList.add(opt.correct?'correctChoice':'wrongChoice');
+      document.getElementById('artifactDocFeedback').textContent = opt.feedback;
+      InvestigationState.artifacts.push({ id:findMeta.id, name:findMeta.name, provenience:opt.provenance });
+      Telemetry.record(findMeta.id,'documented',{ provenience:opt.provenance });
+      refreshHUD();
+      refreshLabDisplay();
+      setTimeout(()=>{ closePanel('artifactDocOverlay'); onDone(); }, 1300);
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+
+/* ---- Feature interpretation (confidence-based, not single-answer) ---- */
+const FEATURE_DATA = {
+  hearth1: { desc:"A cluster of angular, heat-fractured rock sits atop a dark, ash-stained soil patch roughly 60 cm across, with charcoal flecks throughout.",
+    choices:[
+      "A hearth — a fire feature used for cooking or warmth",
+      "A storage pit lined with fire-cracked rock",
+      "A natural stone concentration with no cultural origin",
+      "Not enough visible evidence to interpret confidently"
+    ] }
+};
+function openFeatureInterpretation(findMeta, onDone){
+  openPanel('featureOverlay', { dismissible:false, initialFocus:'#featureChoices button' });
+  const data = FEATURE_DATA[findMeta.id];
+  document.getElementById('featureDesc').textContent = data.desc;
+  const choicesEl = document.getElementById('featureChoices'); choicesEl.innerHTML='';
+  document.getElementById('featureFeedback').textContent='';
+  document.getElementById('closeFeatureBtn').style.display='none';
+  let chosenInterpretation = null, chosenConfidence = null;
+
+  data.choices.forEach(text=>{
+    const btn=document.createElement('button'); btn.textContent=text;
+    btn.addEventListener('click', ()=>{
+      choicesEl.querySelectorAll('button').forEach(b=>b.classList.remove('correctChoice'));
+      btn.classList.add('correctChoice');
+      chosenInterpretation = text;
+      Telemetry.record(findMeta.id,'classified',{ interpretation:text });
+    });
+    choicesEl.appendChild(btn);
+  });
+  document.querySelectorAll('#featureConfidence .confBtn').forEach(btn=>{
+    btn.classList.remove('active');
+    btn.onclick = ()=>{ document.querySelectorAll('#featureConfidence .confBtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); chosenConfidence = btn.dataset.c; };
+  });
+  const finishBtn = document.createElement('button'); finishBtn.className='btn'; finishBtn.style.marginTop='10px';
+  finishBtn.textContent='Photograph, Measure & Record Interpretation';
+  finishBtn.addEventListener('click', ()=>{
+    if (!chosenInterpretation || !chosenConfidence){ document.getElementById('featureFeedback').textContent = "Choose an interpretation and a confidence level first."; return; }
+    // Equipment dependency: without a camera in the field kit, full
+    // photographic documentation isn't actually possible — the learner can
+    // retrieve one from the equipment area at a small time cost instead of
+    // being silently allowed to "photograph" with nothing to photograph with.
+    if (!InvestigationState.equipment.selected.includes('camera')){
+      document.getElementById('featureFeedback').textContent = "You don't have a camera in your kit. Retrieve one from the equipment area (–1 project day) before you can fully document this feature — or record it without a photo for now.";
+      if (!finishBtn.dataset.retrieveOffered){
+        finishBtn.dataset.retrieveOffered = '1';
+        finishBtn.textContent = 'Retrieve Camera (–1 day) & Photograph, Measure, Record';
+      } else {
+        daysCost('Retrieved camera from equipment area', 1);
+        InvestigationState.equipment.selected.push('camera');
+        finishBtn.click(); // now that a camera is in the kit, re-run this same handler to complete normally
+      }
+      return;
+    }
+    InvestigationState.features.push({ id:findMeta.id, interpretation:chosenInterpretation, confidence:chosenConfidence, documented:true });
+    Telemetry.record(findMeta.id,'photographed',{});
+    Telemetry.record(findMeta.id,'completed',{ confidence:chosenConfidence, documented:true });
+    document.getElementById('featureFeedback').textContent = "Feature fully documented — a well-supported, properly recorded interpretation like this carries real weight in your final report.";
+    document.getElementById('closeFeatureBtn').style.display='inline-block';
+    refreshHUD();
+  });
+  const skipBtn = document.createElement('button'); skipBtn.textContent = "Note it mentally and keep excavating (no photo or measurements)";
+  skipBtn.addEventListener('click', ()=>{
+    InvestigationState.features.push({ id:findMeta.id, interpretation: chosenInterpretation||"unrecorded", confidence: chosenConfidence||"insufficient", documented:false });
+    Telemetry.record(findMeta.id,'completed',{ documented:false });
+    document.getElementById('featureFeedback').textContent = "Without a photo or measurements, this feature's record is incomplete — it will carry less weight in your final interpretation.";
+    document.getElementById('closeFeatureBtn').style.display='inline-block';
+    refreshHUD();
+  });
+  choicesEl.appendChild(finishBtn); choicesEl.appendChild(skipBtn);
+  document.getElementById('closeFeatureBtn').onclick = ()=>{ closePanel('featureOverlay'); onDone(); };
+}
+
+/* ---- Station 8 (one scenario): Ethics ---- */
+const ETHICS_SCENARIO = {
+  desc:"A hiker has stopped at the fence line, holding a complete stone projectile point she says she found near the eroding bluff face. She's excited and asks if she can keep it as a souvenir.",
+  choices:[
+    { text:"Thank her for reporting it, ask her not to remove or handle it further, document the discovery location, and notify the field director or responsible land authority", sound:true,
+      feedback:"This is the professional response. It preserves the scientific value of the find, respects the visitor, and still gets usable information from an unplanned discovery — and it doesn't let the artifact leave the site on the strength of one conversation. Who's actually authorized to release a find (if anyone) is a land-ownership and legal question for the director/agency to resolve, not something decided on the spot." },
+    { text:"Thank her, record exactly where she found it, and then let her keep it now that its location is documented", sound:false,
+      feedback:"Recording the location is the right instinct, but documentation alone doesn't make it appropriate to release the artifact to her — ownership and disposition of finds from an investigation like this is a legal/land-management decision, not something to settle in the field." },
+    { text:"Tell her she's not allowed to have found anything and demand she hand it over immediately", sound:false,
+      feedback:"This escalates unnecessarily and damages public trust — most visitors respond well to being treated respectfully and told why it matters, not just given orders." },
+    { text:"Ignore it — you're busy with the excavation unit", sound:false,
+      feedback:"An unplanned discovery like this is still useful data if handled properly — walking away loses that opportunity and the artifact leaves undocumented." }
+  ]
+};
+function openEthicsScenario(){
+  openPanel('ethicsOverlay', { dismissible:false, initialFocus:'#ethicsChoices button' });
+  document.getElementById('ethicsDesc').textContent = ETHICS_SCENARIO.desc;
+  const choicesEl = document.getElementById('ethicsChoices'); choicesEl.innerHTML='';
+  document.getElementById('ethicsFeedback').textContent='';
+  document.getElementById('closeEthicsBtn').style.display='none';
+  ETHICS_SCENARIO.choices.forEach(c=>{
+    const btn=document.createElement('button'); btn.textContent=c.text;
+    btn.addEventListener('click', ()=>{
+      choicesEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+      btn.classList.add(c.sound?'correctChoice':'wrongChoice');
+      document.getElementById('ethicsFeedback').textContent = c.feedback;
+      InvestigationState.ethics.decisions.push({ scenario:'visitor_collecting', choice:c.text, sound:c.sound });
+      Telemetry.record('ethics_visitor','interpreted',{ sound:c.sound });
+      document.getElementById('closeEthicsBtn').style.display='inline-block';
+      refreshHUD();
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+document.getElementById('closeEthicsBtn').addEventListener('click', ()=>closePanel('ethicsOverlay'));
+
+/* ---- Field Lab ---- */
+function openLab(){
+  openPanel('labOverlay');
+  const list = document.getElementById('labList'); list.innerHTML='';
+  if (!InvestigationState.artifacts.length){ list.innerHTML = '<p style="color:var(--text-dim);">Nothing recovered yet — excavate and document finds first.</p>'; return; }
+  InvestigationState.artifacts.forEach(a=>{
+    const row=document.createElement('div'); row.className='evRow';
+    row.innerHTML = `<span>${a.name}</span><span class="flagPill ${a.provenience==='good'?'good':'warn'}">${a.provenience} provenience</span>`;
+    list.appendChild(row);
+  });
+}
+document.getElementById('closeLabBtn').addEventListener('click', ()=>closePanel('labOverlay'));
+
+/* ---- Evidence Room + Notebook (share the same tab-content renderer) ---- */
+function evidenceTabHTML(tab){
+  if (tab==='survey'){
+    if (!InvestigationState.survey.flagged.length) return '<p>No survey conducted yet.</p>';
+    return '<div class="evList">' + InvestigationState.survey.flagged.map(s=>
+      `<div class="evRow"><span>${s.name}</span><span class="flagPill ${s.correct?'good':'bad'}">${s.calledEvidence?'flagged':'left'} (${s.correct?'correct':'incorrect'})</span></div>`).join('') + '</div>';
+  }
+  if (tab==='excavation'){
+    let html = `<p>Unit: ${InvestigationState.chosenUnit ? SiteConfig.units[InvestigationState.chosenUnit].label : 'None opened yet'}</p>`;
+    html += '<div class="evList">' + InvestigationState.excavation.decisions.map(d=>
+      `<div class="evRow"><span>Level ${d.level}: ${d.choice}</span><span class="flagPill ${d.correct?'good':'warn'}">${d.correct?'sound':'costly'}</span></div>`).join('') + '</div>';
+    return html;
+  }
+  if (tab==='artifacts'){
+    if (!InvestigationState.artifacts.length && !InvestigationState.artifactsMissed.length) return '<p>No artifacts recovered.</p>';
+    let html = '<div class="evList">';
+    InvestigationState.artifacts.forEach(a=>{ html += `<div class="evRow"><span>${a.name}</span><span class="flagPill ${a.provenience==='good'?'good':'warn'}">${a.provenience}</span></div>`; });
+    InvestigationState.artifactsMissed.forEach(m=>{ html += `<div class="evRow"><span>${m.name} (missed)</span><span class="flagPill bad">absent</span></div>`; });
+    return html + '</div>';
+  }
+  if (tab==='features'){
+    if (!InvestigationState.features.length) return '<p>No features encountered yet.</p>';
+    return '<div class="evList">' + InvestigationState.features.map(f=>
+      `<div class="evRow"><span>${f.interpretation} (${f.confidence})</span><span class="flagPill ${f.documented?'good':'warn'}">${f.documented?'complete record':'incomplete record'}</span></div>`).join('') + '</div>';
+  }
+  if (tab==='ethics'){
+    if (!InvestigationState.ethics.decisions.length) return '<p>No ethical decisions encountered yet.</p>';
+    return '<div class="evList">' + InvestigationState.ethics.decisions.map(e=>
+      `<div class="evRow"><span>${e.choice}</span><span class="flagPill ${e.sound?'good':'bad'}">${e.sound?'sound judgment':'review needed'}</span></div>`).join('') + '</div>';
+  }
+  return '';
+}
+function updateInterpretationReadiness(){
+  const status = document.getElementById('interpretationReadiness');
+  const btn = document.getElementById('goToInterpretationBtn');
+  if (!status || !btn) return;
+  const missing = interpretationRequirements();
+  if (!missing.length){
+    status.textContent = 'Ready: all required investigation steps for your selected excavation path are complete.';
+    status.style.borderColor = 'var(--accent-2)';
+    status.style.color = 'var(--text)';
+    btn.textContent = 'Build Final Interpretation';
+  } else {
+    status.textContent = 'Before building the interpretation: ' + missing.join('; ') + '.';
+    status.style.borderColor = 'var(--accent)';
+    status.style.color = 'var(--text-dim)';
+    btn.textContent = 'Show Remaining Requirements';
+  }
+}
+function openEvidenceRoom(){ openPanel('evidenceOverlay'); renderEvidenceTab('survey'); updateInterpretationReadiness(); }
+function renderEvidenceTab(tab){
+  document.querySelectorAll('#evidenceTabs .tabBtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('evidenceContent').innerHTML = evidenceTabHTML(tab);
+}
+document.querySelectorAll('#evidenceTabs .tabBtn').forEach(btn=>btn.addEventListener('click', ()=>renderEvidenceTab(btn.dataset.tab)));
+document.getElementById('closeEvidenceBtn').addEventListener('click', ()=>closePanel('evidenceOverlay'));
+document.getElementById('goToInterpretationBtn').addEventListener('click', ()=>{
+  const missing = interpretationRequirements();
+  if (missing.length){
+    updateInterpretationReadiness();
+    toast('Remaining: ' + missing.join('; ') + '.');
+    return;
+  }
+  closePanel('evidenceOverlay'); openInterpretation();
+});
+
+/* ---- Notebook ---- */
+function openNotebook(){ openPanel('notebookOverlay'); renderNotebookTab('briefing'); }
+// Safely renders learner-entered free text (claims, reasoning, notes) via
+// textContent/DOM construction rather than innerHTML — template-literal
+// interpolation of untrusted text into innerHTML was an HTML-injection risk.
+function renderClaimsSafely(container, claims){
+  container.innerHTML = '';
+  if (!claims.length){ const p=document.createElement('p'); p.textContent='No interpretation submitted yet.'; container.appendChild(p); return; }
+  claims.forEach(c=>{
+    const block = document.createElement('div'); block.className='claimBlock';
+    const b = document.createElement('b'); b.textContent = c.claim; block.appendChild(b);
+    block.appendChild(document.createElement('br'));
+    const span = document.createElement('span'); span.style.color='var(--text-dim)'; span.style.fontSize='.8rem';
+    span.appendChild(document.createTextNode(`Evidence: ${c.evidence.join(', ')||'none cited'}`));
+    span.appendChild(document.createElement('br'));
+    span.appendChild(document.createTextNode(`Confidence: ${c.confidence}`));
+    span.appendChild(document.createElement('br'));
+    span.appendChild(document.createTextNode(c.reasoning));
+    block.appendChild(span);
+    container.appendChild(block);
+  });
+}
+function renderNotesSafely(container, notes){
+  container.innerHTML = '';
+  if (!notes.length){ const p=document.createElement('p'); p.textContent='No notes yet.'; container.appendChild(p); return; }
+  notes.forEach(n=>{
+    const div = document.createElement('div'); div.style.marginBottom='4px'; div.style.fontSize='.8rem'; div.style.color='var(--text-dim)';
+    div.textContent = '• ' + n;
+    container.appendChild(div);
+  });
+}
+function renderNotebookTab(tab){
+  document.querySelectorAll('#notebookTabs .tabBtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const content = document.getElementById('notebookContent');
+  if (tab==='briefing') content.innerHTML = `<p style="white-space:pre-line;">${OPENING_BRIEFING}</p>`;
+  else if (tab==='equipment') content.innerHTML = '<div class="evList">' + (InvestigationState.equipment.selected.map(id=>{ const it=EQUIPMENT_ITEMS.find(e=>e.id===id); return `<div class="evRow"><span>${it?it.icon+' '+it.label:id}</span></div>`; }).join('') || '<p>No kit prepared yet.</p>') + '</div>';
+  else if (tab==='survey' || tab==='excavation') content.innerHTML = evidenceTabHTML(tab);
+  else if (tab==='notes') renderNotesSafely(content, InvestigationState.notes);
+  else if (tab==='interpretation') renderClaimsSafely(content, InvestigationState.finalInterpretation.claims);
+}
+document.querySelectorAll('#notebookTabs .tabBtn').forEach(btn=>btn.addEventListener('click', ()=>renderNotebookTab(btn.dataset.tab)));
+document.getElementById('notebookBtn').addEventListener('click', openNotebook);
+document.getElementById('closeNotebookBtn').addEventListener('click', ()=>closePanel('notebookOverlay'));
+document.getElementById('evidenceBtn').addEventListener('click', openEvidenceRoom);
+
+/* ---- Final interpretation builder ---- */
+function collectAvailableEvidence(){
+  const ev = [];
+  InvestigationState.survey.flagged.filter(s=>s.correct && s.calledEvidence).forEach(s=>ev.push(`Surface find: ${s.name}`));
+  InvestigationState.artifacts.forEach(a=>ev.push(`${a.name} (${a.provenience} provenience)`));
+  InvestigationState.features.forEach(f=>ev.push(`Feature: ${f.interpretation} (${f.confidence}, ${f.documented?'documented':'undocumented'})`));
+  if (InvestigationState.excavation.screened) ev.push('Screened backdirt recovery (Level 1)');
+  return ev;
+}
+let claimBlocks = [];
+function addClaimBlock(){
+  const container = document.getElementById('claimsContainer');
+  const block = document.createElement('div'); block.className='claimBlock';
+  const evidenceList = collectAvailableEvidence();
+  block.innerHTML = `
+    <label>Claim</label>
+    <textarea class="notebookInput claimText" placeholder="e.g., Redstone Bluff was occupied as a temporary hunting camp..."></textarea>
+    <label>Evidence cited</label>
+    <div class="evList claimEvidence">${evidenceList.length ? evidenceList.map((e,i)=>`<label style="display:flex;gap:6px;align-items:center;font-size:.8rem;"><input type="checkbox" value="${i}">${e}</label>`).join('') : '<span style="color:var(--text-dim);font-size:.8rem;">No evidence collected yet.</span>'}</div>
+    <label>Confidence</label>
+    <div class="confRow claimConfidence">
+      <button type="button" class="confBtn" data-c="strong">Strong</button>
+      <button type="button" class="confBtn" data-c="probable">Probable</button>
+      <button type="button" class="confBtn" data-c="tentative">Tentative</button>
+    </div>
+    <label>Reasoning</label>
+    <textarea class="notebookInput claimReasoning" placeholder="Why does this evidence support your claim?"></textarea>
+    <div class="claimError" role="alert" style="color:var(--danger);font-size:.78rem;margin-top:6px;min-height:1em;"></div>`;
+  block.querySelectorAll('.claimConfidence .confBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ block.querySelectorAll('.claimConfidence .confBtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); });
+  });
+  container.appendChild(block);
+  claimBlocks.push({ block, evidenceList });
+}
+document.getElementById('addClaimBtn').addEventListener('click', addClaimBlock);
+function openInterpretation(){ openPanel('interpretationOverlay'); document.getElementById('claimsContainer').innerHTML=''; claimBlocks=[]; addClaimBlock(); }
+document.getElementById('closeInterpretationBtn').addEventListener('click', ()=>closePanel('interpretationOverlay'));
+document.getElementById('submitInterpretationBtn').addEventListener('click', ()=>{
+  if (!claimBlocks.length){
+    toast("Add at least one claim before submitting.");
+    return;
+  }
+  const claims = [];
+  let firstInvalid = null;
+  let hasError = false;
+
+  claimBlocks.forEach(cb=>{
+    const errEl = cb.block.querySelector('.claimError');
+    errEl.textContent = '';
+    const textEl = cb.block.querySelector('.claimText');
+    const text = textEl.value.trim();
+    const checkboxes = [...cb.block.querySelectorAll('.claimEvidence input:checked')];
+    const confBtn = cb.block.querySelector('.claimConfidence .confBtn.active');
+    const reasoningEl = cb.block.querySelector('.claimReasoning');
+    const reasoning = reasoningEl.value.trim();
+
+    let msg = null, badEl = null;
+    if (!text){ msg='Enter a claim.'; badEl=textEl; }
+    else if (!checkboxes.length){ msg='Cite at least one piece of evidence.'; badEl=cb.block.querySelector('.claimEvidence input'); }
+    else if (!confBtn){ msg='Choose a confidence level.'; badEl=cb.block.querySelector('.claimConfidence .confBtn'); }
+    else if (reasoning.length < 10){ msg='Explain how the evidence supports the claim.'; badEl=reasoningEl; }
+
+    if (msg){
+      hasError = true;
+      errEl.textContent = msg;
+      if (!firstInvalid) firstInvalid = badEl;
+      return; // this claim is not silently skipped — it blocks submission entirely
+    }
+    claims.push({ claim:text, evidence: checkboxes.map(i=>cb.evidenceList[parseInt(i.value)]), confidence: confBtn.dataset.c, reasoning });
+  });
+
+  const limitationsEl = document.getElementById('limitationsInput');
+  const limitationsErrEl = document.getElementById('limitationsError');
+  const limitations = limitationsEl.value.trim();
+  limitationsErrEl.textContent = '';
+  if (limitations.length < 5){
+    hasError = true;
+    limitationsErrEl.textContent = 'Identify at least one limitation or next step.';
+    if (!firstInvalid) firstInvalid = limitationsEl;
+  }
+
+  if (hasError){
+    if (firstInvalid) firstInvalid.focus();
+    return;
+  }
+
+  InvestigationState.finalInterpretation.claims = claims;
+  InvestigationState.finalInterpretation.limitations = limitations;
+  Telemetry.record('final_interpretation','completed',{ claimCount:claims.length });
+  closePanel('interpretationOverlay');
+  showResults();
+});
+
+/* =========================================================================
+   HUD / BRIEFING / TOAST
+   ========================================================================= */
+function chosenPathRequiresFeature(){
+  return InvestigationState.chosenUnit === 'unitA';
+}
+function interpretationRequirements(){
+  const missing = [];
+  if (!equipmentPrepared) missing.push('prepare the field kit');
+  if (InvestigationState.survey.flagged.length < SURVEY_ITEMS.length) missing.push(`complete the surface survey (${InvestigationState.survey.flagged.length}/${SURVEY_ITEMS.length})`);
+  if (!InvestigationState.chosenUnit) missing.push('choose an excavation unit');
+  if (InvestigationState.chosenUnit && InvestigationState.excavation.levelsCompleted < activeExcavationSteps().length) missing.push(`finish excavation (${InvestigationState.excavation.levelsCompleted}/${activeExcavationSteps().length} levels)`);
+  if (InvestigationState.chosenUnit && !InvestigationState.artifacts.length) missing.push('document the recovered artifact');
+  if (chosenPathRequiresFeature() && !InvestigationState.features.length) missing.push('interpret the exposed feature');
+  if (!InvestigationState.ethics.decisions.length) missing.push('complete the ethics decision with Dr. Castillo');
+  return missing;
+}
+function currentObjective(){
+  if (!equipmentPrepared) return "Objective: Prepare your field kit.";
+  const surveyDone = InvestigationState.survey.flagged.length;
+  if (surveyDone < SURVEY_ITEMS.length) return `Objective: Complete the surface survey (${surveyDone}/${SURVEY_ITEMS.length}).`;
+  if (!InvestigationState.chosenUnit) return "Objective: Choose an excavation unit.";
+  if (InvestigationState.excavation.levelsCompleted < activeExcavationSteps().length) return `Objective: Excavate Level ${InvestigationState.excavation.levelsCompleted+1}.`;
+  if (!InvestigationState.artifacts.length) return "Objective: Document the recovered artifact.";
+  if (chosenPathRequiresFeature() && !InvestigationState.features.length) return "Objective: Interpret the exposed feature.";
+  if (!InvestigationState.ethics.decisions.length) return "Objective: Complete the ethical decision with Dr. Castillo.";
+  if (!InvestigationState.finalInterpretation.claims.length) return "Objective: Build your final interpretation.";
+  return "Investigation complete — review your final report.";
+}
+function investigationMinimumMet(){
+  return interpretationRequirements().length === 0;
+}
+function refreshObjective(){
+  const obj=currentObjective(); document.getElementById('stationBanner').textContent=obj;
+  const action=document.getElementById('objectiveAction');
+  action.style.display='block';
+  if(!equipmentPrepared) action.textContent='Open Toolkit';
+  else if(InvestigationState.survey.flagged.length<SURVEY_ITEMS.length) action.textContent='Guide Me to Next Survey Object';
+  else if(!InvestigationState.chosenUnit) action.textContent='Choose Excavation Unit';
+  else if(InvestigationState.excavation.levelsCompleted<activeExcavationSteps().length) action.textContent='Continue Excavation';
+  else if(!InvestigationState.artifacts.length) action.textContent='Document Recovered Artifact';
+  else if(chosenPathRequiresFeature() && !InvestigationState.features.length) action.textContent='Interpret Exposed Feature';
+  else if(!InvestigationState.ethics.decisions.length) action.textContent='Complete Ethics Decision';
+  else if(!InvestigationState.finalInterpretation.claims.length) action.textContent='Build Final Interpretation';
+  else action.textContent='Open Investigation Report';
+  const guide=document.getElementById('surveyGuideFlag');
+  guide.style.display=equipmentPrepared && InvestigationState.survey.flagged.length<SURVEY_ITEMS.length ? 'block':'none';
+  document.getElementById('surveyGuideCount').textContent=`${InvestigationState.survey.flagged.length}/${SURVEY_ITEMS.length}`;
+  const context=document.getElementById('contextInstruction');
+  if(!equipmentPrepared) context.textContent='Click Open Toolkit, then select the tools needed for fieldwork.';
+  else if(InvestigationState.survey.flagged.length<SURVEY_ITEMS.length) context.textContent='Follow the yellow survey boundary. Click a flagged object or press E/Enter when highlighted.';
+  else if(!InvestigationState.chosenUnit) context.textContent='Compare Unit A and Unit B, then select the excavation location that best addresses your research question.';
+  else if(InvestigationState.excavation.levelsCompleted<activeExcavationSteps().length) context.textContent='Return to the opened trench. Each completed level will now appear visibly deeper.';
+  else if(!InvestigationState.artifacts.length) context.textContent='Complete the artifact documentation record. This recovery action prevents a missing record from blocking the investigation.';
+  else if(chosenPathRequiresFeature() && !InvestigationState.features.length) context.textContent='Interpret and record the exposed feature before completing the final synthesis.';
+  else if(!InvestigationState.ethics.decisions.length) context.textContent='Complete the professional ethics decision with Dr. Castillo.';
+  else context.textContent='Review the Evidence Room and construct an evidence-based interpretation.';
+  document.getElementById('miniMapWrap').style.display='block'; document.getElementById('viewControls').style.display='flex';
+}
+function refreshHUD(){
+  document.getElementById('daysStat').textContent = InvestigationState.daysRemaining;
+  const evidenceCount = InvestigationState.artifacts.length + InvestigationState.features.length +
+    InvestigationState.survey.flagged.filter(s=>s.correct).length;
+  document.getElementById('evidenceStat').textContent = evidenceCount;
+  document.getElementById('ethicsStat').textContent = `${InvestigationState.ethics.decisions.length}/1`;
+  refreshObjective();
+  if (typeof refreshEvidenceBoard === 'function') refreshEvidenceBoard();
+}
+refreshHUDRef = refreshHUD;
+function toast(msg){
+  const el = document.createElement('div');
+  el.setAttribute('role','status');
+  el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;padding:10px 16px;font-size:.82rem;z-index:60;max-width:80vw;text-align:center;';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .5s'; el.style.opacity='0'; setTimeout(()=>el.remove(),500); }, 3400);
+}
+const briefingOverlay = document.getElementById('briefingOverlay');
+function showBriefing(title, body, onContinue){
+  document.getElementById('briefingTitle').textContent = title;
+  document.getElementById('briefingBody').textContent = body;
+  openPanel('briefingOverlay', { dismissible:false, initialFocus:'#briefingContinueBtn' });
+  const btn = document.getElementById('briefingContinueBtn');
+  const handler = ()=>{ closePanel('briefingOverlay'); btn.removeEventListener('click', handler); if (onContinue) onContinue(); };
+  btn.addEventListener('click', handler);
+}
+const OPENING_BRIEFING = `Welcome to Redstone Bluff. I'm ${SiteConfig.supervisorName}.
+
+Erosion along the Redstone River has exposed artifacts in the bluff above us, and the state office believes this may be an undocumented prehistoric Native American settlement. A highway expansion gives us three weeks before construction begins here.
+
+Your job isn't just to collect artifacts — it's to help reconstruct who lived here, when, and how, using the evidence we can properly document before it's lost. That means recording context is just as important as finding things.
+
+We'll also need to consult with descendant communities as this investigation moves forward — that's a normal, essential part of professional practice here, not a formality.
+
+Start by preparing your field kit. The toolkit opens automatically after the controls guide. Then follow the yellow survey flags and inspect five marked surface objects.`;
+
+document.getElementById('helpBtn').addEventListener('click', ()=>{
+  alert("Move: WASD or arrow keys\nLook: mouse drag (click to lock cursor) or drag on the right side of the screen on mobile\nInteract: press E while looking at something, or tap Interact on mobile\nEsc: closes panels, then releases the mouse cursor.");
+});
+
+/* =========================================================================
+   RESULTS / INVESTIGATION REPORT — multidimensional profile, not one score.
+   ========================================================================= */
+function assessmentProfile(){
+  const eq = InvestigationState.equipment;
+  const appropriateSelected = EQUIPMENT_ITEMS.filter(i=>i.appropriate && eq.selected.includes(i.id)).length;
+  const appropriateTotal = EQUIPMENT_ITEMS.filter(i=>i.appropriate).length;
+  const inappropriateSelected = EQUIPMENT_ITEMS.filter(i=>!i.appropriate && eq.selected.includes(i.id)).length;
+  const fieldPrepScore = Math.max(0, appropriateSelected - inappropriateSelected*2);
+  const fieldPrepLabel = fieldPrepScore >= appropriateTotal-2 ? "Strong" : fieldPrepScore >= appropriateTotal-5 ? "Developing" : "Needs review";
+
+  const surveyCorrect = InvestigationState.survey.flagged.filter(s=>s.correct).length;
+  const surveyLabel = surveyCorrect >= SURVEY_ITEMS.length-1 ? "Strong" : surveyCorrect >= SURVEY_ITEMS.length-2 ? "Developing" : "Needs review";
+
+  const excavSound = InvestigationState.excavation.decisions.filter(d=>d.correct).length;
+  const excavLabel = excavSound >= InvestigationState.excavation.decisions.length && InvestigationState.excavation.decisions.length>0 ? "Strong" : excavSound>0 ? "Developing" : "Needs review";
+
+  const goodProvenience = InvestigationState.artifacts.filter(a=>a.provenience==='good').length;
+  const docLabel = InvestigationState.artifacts.length===0 ? "N/A" : goodProvenience===InvestigationState.artifacts.length ? "Strong" : goodProvenience>0 ? "Developing" : "Needs review";
+
+  const soundEthics = InvestigationState.ethics.decisions.filter(e=>e.sound).length;
+  const ethicsLabel = InvestigationState.ethics.decisions.length===0 ? "Not yet encountered" : soundEthics===InvestigationState.ethics.decisions.length ? "Strong" : "Needs review";
+
+  const claims = InvestigationState.finalInterpretation.claims;
+  const claimsWithEvidence = claims.filter(c=>c.evidence.length>0).length;
+  const interpLabel = claims.length===0 ? "Not yet submitted" : claimsWithEvidence===claims.length ? "Strong — every claim cites evidence" : "Developing — some claims lack cited evidence";
+
+  return [
+    ["Field Preparation", fieldPrepLabel],
+    ["Survey", surveyLabel],
+    ["Excavation", excavLabel],
+    ["Documentation", docLabel],
+    ["Ethics", ethicsLabel],
+    ["Interpretation", interpLabel]
+  ];
+}
+function buildReportText(){
+  const profile = assessmentProfile();
+  let out = `Redstone Bluff Investigation Report\nInvestigator: ${InvestigationState.studentName||"—"}\n\n`;
+  out += `Project days used: ${21-InvestigationState.daysRemaining} of 21\n`;
+  out += `Equipment selected: ${InvestigationState.equipment.selected.length} items\n`;
+  out += `Excavation unit: ${InvestigationState.chosenUnit ? SiteConfig.units[InvestigationState.chosenUnit].label : 'None opened'}\n`;
+  out += `Artifacts recovered: ${InvestigationState.artifacts.length} (${InvestigationState.artifacts.filter(a=>a.provenience==='good').length} with full provenience)\n`;
+  out += `Artifacts missed: ${InvestigationState.artifactsMissed.length}\n`;
+  out += `Features identified: ${InvestigationState.features.length} (${InvestigationState.features.filter(f=>f.documented).length} fully documented)\n`;
+  out += `Ethical decisions: ${InvestigationState.ethics.decisions.length} (${InvestigationState.ethics.decisions.filter(e=>e.sound).length} sound)\n\n`;
+  out += `Performance profile:\n`;
+  profile.forEach(([cat,label])=>{ out += `  ${cat}: ${label}\n`; });
+  out += `\nFinal interpretation:\n`;
+  if (!InvestigationState.finalInterpretation.claims.length) out += `  Not yet submitted.\n`;
+  else InvestigationState.finalInterpretation.claims.forEach(c=>{
+    out += `  Claim: ${c.claim}\n  Confidence: ${c.confidence}\n  Evidence cited: ${c.evidence.join('; ')||'none'}\n  Reasoning: ${c.reasoning}\n\n`;
+  });
+  out += `Limitations noted: ${InvestigationState.finalInterpretation.limitations || 'none recorded'}\n`;
+  return out;
+}
+const resultsOverlay = document.getElementById('resultsOverlay');
+document.getElementById('resultsBtn').addEventListener('click', showResults);
+document.getElementById('closeResultsBtn').addEventListener('click', ()=>closePanel('resultsOverlay'));
+function showResults(){
+  const complete = investigationMinimumMet() && InvestigationState.finalInterpretation.claims.length>0;
+  const statsEl = document.getElementById('reportStats');
+  statsEl.innerHTML = `
+    <div class="statBox" style="grid-column:1/-1;"><div class="num" style="color:${complete?'var(--accent-2)':'var(--danger)'};font-size:1rem;">${complete?'Investigation Complete':'Investigation Incomplete'}</div><div class="label">Status</div></div>
+    <div class="statBox"><div class="num">${21-InvestigationState.daysRemaining}/21</div><div class="label">Days Used</div></div>
+    <div class="statBox"><div class="num">${InvestigationState.artifacts.length}</div><div class="label">Artifacts Recovered</div></div>
+    <div class="statBox"><div class="num">${InvestigationState.features.length}</div><div class="label">Features Identified</div></div>
+    <div class="statBox"><div class="num">${InvestigationState.ethics.decisions.length}</div><div class="label">Ethical Decisions</div></div>
+    <div class="statBox"><div class="num">${InvestigationState.finalInterpretation.claims.length}</div><div class="label">Claims Submitted</div></div>
+    <div class="statBox"><div class="num">${Telemetry.formatTime(Telemetry.timeOnTaskMs())}</div><div class="label">Time on Task</div></div>`;
+  const profile = assessmentProfile();
+  document.getElementById('reportProfile').innerHTML = profile.map(([cat,label])=>
+    `<div class="evRow"><span>${cat}</span><span class="flagPill ${label==='Strong'?'good':label.includes('Needs')?'bad':'warn'}">${label}</span></div>`).join('');
+  document.getElementById('summaryBox').textContent = (complete?'':'Status: INVESTIGATION INCOMPLETE\n\n') + buildReportText();
+  openPanel('resultsOverlay');
+}
+document.getElementById('downloadCsvBtn').addEventListener('click', ()=>{
+  const blob = new Blob([Telemetry.toCSV()], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`redstone-bluff-${(InvestigationState.studentName||'student').replace(/\s+/g,'_')}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+});
+document.getElementById('copySummaryBtn').addEventListener('click', ()=>{ navigator.clipboard?.writeText(buildReportText()).catch(()=>{}); });
+document.getElementById('copyXapiBtn').addEventListener('click', ()=>{ navigator.clipboard?.writeText(Telemetry.toXAPI()).catch(()=>{}); });
+
+/* =========================================================================
+   SETTINGS
+   ========================================================================= */
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.querySelectorAll('#qualitySeg2 .segBtn').forEach(b=>b.classList.toggle('active', b.dataset.q===currentQualityKeyName()));
+  openPanel('settingsOverlay');
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>closePanel('settingsOverlay'));
+function currentQualityKeyName(){ return Object.keys(QUALITY_PRESETS).find(k=>QUALITY_PRESETS[k]===Q) || 'standard'; }
+document.querySelectorAll('#qualitySeg2 .segBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#qualitySeg2 .segBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#qualitySeg .segBtn').forEach(b=>b.classList.toggle('active', b.dataset.q===btn.dataset.q));
+    applyQualityPreset(btn.dataset.q);
+  });
+});
+function wireRange(id, valId, onChange){
+  const el = document.getElementById(id), valEl = document.getElementById(valId);
+  el.addEventListener('input', ()=>{ const v=parseFloat(el.value); valEl.textContent=v.toFixed(2)+'×'; onChange(v); });
+}
+wireRange('sensSlider2','sensVal2', v=>{ settings.sensitivity=v; document.getElementById('sensSlider').value=v; document.getElementById('sensVal').textContent=v.toFixed(2)+'×'; });
+wireRange('sensSlider','sensVal', v=>{ settings.sensitivity=v; document.getElementById('sensSlider2').value=v; document.getElementById('sensVal2').textContent=v.toFixed(2)+'×'; });
+document.getElementById('cameraBobToggle').addEventListener('change', e=>{ settings.cameraBob=e.target.checked; });
+
+document.getElementById('onboardingContinueBtn').addEventListener('click',()=>{ closePanel('onboardingOverlay'); renderEquipmentGrid(); openPanel('equipmentOverlay',{dismissible:false,initialFocus:'#equipmentGrid button'}); });
+
+// Recovery helpers ensure that every required stage can be reopened from the
+// objective panel even if a learner closes a panel, loses orientation, or a
+// saved/partially completed state is missing a normally mandatory record.
+function recoveryArtifactForChosenPath(){
+  if (InvestigationState.chosenUnit === 'unitA') return { type:'artifact', id:'sherd1', name:'Pottery Sherd', desc:'A pottery sherd is emerging from the unit wall, still partly embedded in the soil, surrounded by small flakes of stone debitage.' };
+  return { type:'artifact', id:'intrusive1', name:'Intrusive Metal Fragment', desc:'A small, heavily rusted metal fragment sits within an otherwise prehistoric soil matrix — its position looks disturbed rather than originally deposited here.' };
+}
+function openCurrentRequiredTask(){
+  if (!equipmentPrepared){ renderEquipmentGrid(); openPanel('equipmentOverlay'); return true; }
+  if (InvestigationState.survey.flagged.length < SURVEY_ITEMS.length){ faceTarget(targetForObjective()); return true; }
+  if (!InvestigationState.chosenUnit){ openUnitChoice(); return true; }
+  if (InvestigationState.excavation.levelsCompleted < activeExcavationSteps().length){ openExcavationStep(); return true; }
+  if (!InvestigationState.artifacts.length){
+    openArtifactDoc(recoveryArtifactForChosenPath(), ()=>{ refreshHUD(); });
+    return true;
+  }
+  if (chosenPathRequiresFeature() && !InvestigationState.features.length){
+    openFeatureInterpretation({ id:'hearth1' }, ()=>{ refreshHUD(); });
+    return true;
+  }
+  if (!InvestigationState.ethics.decisions.length){ openEthicsScenario(); return true; }
+  if (!InvestigationState.finalInterpretation.claims.length){ openInterpretation(); return true; }
+  showResults();
+  return true;
+}
+document.getElementById('objectiveAction').addEventListener('click',()=>{
+  openCurrentRequiredTask();
+});
+document.getElementById('turnLeftBtn').addEventListener('click',()=>{player.yaw+=Math.PI/8;});
+document.getElementById('turnRightBtn').addEventListener('click',()=>{player.yaw-=Math.PI/8;});
+document.getElementById('resetViewBtn').addEventListener('click',resetView);
+
+/* =========================================================================
+   SESSION START
+   ========================================================================= */
+document.querySelectorAll('#qualitySeg .segBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#qualitySeg .segBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    applyQualityPreset(btn.dataset.q);
+  });
+});
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('studentName').value.trim() || 'Student';
+  settings.sensitivity = parseFloat(document.getElementById('sensSlider').value);
+  document.getElementById('nameGate').style.display='none';
+  showBriefing("Field Briefing", OPENING_BRIEFING, ()=>{
+    Telemetry.start(name);
+    document.getElementById('hud').style.display='flex';
+    refreshHUD();
+    if (isMobile()) document.getElementById('mobileControls').style.display='block';
+    openPanel('onboardingOverlay',{dismissible:false,initialFocus:'#onboardingContinueBtn'});
+  });
+});
+document.getElementById('studentName').addEventListener('keydown', e=>{ if (e.key==='Enter') document.getElementById('startBtn').click(); });
+
+/* =========================================================================
+   RESIZE + RENDER LOOP
+   ========================================================================= */
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+let lastTime = performance.now();
+function animate(){
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = Math.min(0.05, (now-lastTime)/1000);
+  lastTime = now;
+  if (document.getElementById('nameGate').style.display !== 'none' || document.getElementById('briefingOverlay').classList.contains('open')){
+    renderer.render(scene, camera);
+    return;
+  }
+  if (!anyPanelOpen()) updatePlayer(dt);
+  updateInteractionPrompt();
+  updateMiniMap();
+  if(objectiveWorldMarker && !prefersReducedMotion){ objectiveWorldMarker.rotation.z += dt*0.8; objectiveWorldMarker.material.opacity=0.65+Math.sin(now/300)*0.2; }
+  if (riverMat.map && !prefersReducedMotion && currentQualityKeyName() !== 'low'){
+    riverMat.map.offset.x = (now/8000) % 1;
+    riverMat.map.offset.y = (now/14000) % 1;
+  }
+  if (supervisorFigure && !prefersReducedMotion){
+    const t = now/1000;
+    supervisorFigure.group.position.y = Math.sin(t*1.4)*0.008; // subtle breathing bob
+    const distToPlayer = Math.hypot(supervisorFigure.group.position.x-player.pos.x, supervisorFigure.group.position.z-player.pos.z);
+    let targetRotY = supervisorFigure.baseRotY + Math.sin(t*0.3)*0.08; // gentle idle head/body drift
+    if (distToPlayer < 5){
+      const dx = player.pos.x - supervisorFigure.group.position.x, dz = player.pos.z - supervisorFigure.group.position.z;
+      targetRotY = Math.atan2(-dx, -dz);
+    }
+    let delta = targetRotY - supervisorFigure.group.rotation.y;
+    delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+    supervisorFigure.group.rotation.y += delta * Math.min(1, dt*2.5);
+  }
+  renderer.render(scene, camera);
+}
+setupJoystick(document.getElementById('joyMove'), document.getElementById('joyMoveStick'), mobileMove);
+setupLookZone(document.getElementById('lookZone'), mobileLook);
+
+requestAnimationFrame(()=>{
+  setTimeout(()=>{
+    document.getElementById('loading').style.opacity='0';
+    setTimeout(()=>{ document.getElementById('loading').style.display='none'; }, 650);
+  }, 300);
+});
+animate();
+
+} // end webglOk else-block
+})();
+</script>
+</body>
+</html>
+
+
+
+
+

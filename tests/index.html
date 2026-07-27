@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redstone Bluff test suite</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "../vendor/three.module.js"
+  }
+}
+</script>
+<style>
+  body {
+    margin: 0; padding: 24px;
+    background: #14170f; color: #efe7d2;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.6;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.lead { color: #b3ab98; margin: 0 0 18px; }
+  .summary { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; }
+  .summary.pass { background: rgba(111,168,137,0.2); color: #8fe0b6; }
+  .summary.fail { background: rgba(209,112,92,0.2); color: #ff9b85; }
+  .suite { margin: 16px 0 6px; color: #d4a257; font-weight: 700; }
+  .test { padding-left: 16px; }
+  .test.pass { color: #9ec3ac; }
+  .test.fail { color: #ff9b85; }
+</style>
+</head>
+<body>
+<h1>Redstone Bluff test suite</h1>
+<p class="lead">Pure logic only: state transitions, day costs, station gating, evidence availability, unit paths, duplicate protection, save migration, report requirements, assessment, telemetry export, interaction targeting and teleport validity. No headset or 3D context is required.</p>
+<div id="output">Running...</div>
+<script type="module">
+  import { runAll } from './harness.js';
+  import './suites.js';
+  const result = await runAll(document.getElementById('output'));
+  window.__testResult = result;
+  document.title = `${result.failed ? 'FAIL' : 'PASS'} - Redstone Bluff tests`;
+</script>
+</body>
+</html>
