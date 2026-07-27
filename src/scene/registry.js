@@ -24,10 +24,6 @@ export function removeCollisionBox(id) {
   collisionBoxes.delete(id);
 }
 
-export function collisionList() {
-  return collisionBoxes;
-}
-
 export function isBlocked(x, z, radius = 0.35) {
   for (const box of collisionBoxes.values()) {
     if (x > box.minX - radius && x < box.maxX + radius && z > box.minZ - radius && z < box.maxZ + radius) return true;
@@ -74,13 +70,6 @@ export function interactionMetaFor(object3d) {
   return null;
 }
 
-export function findInteractiveById(kind, id) {
-  return interactives.find((o) => {
-    const meta = o.userData.interaction;
-    return meta && meta.kind === kind && meta.id === id;
-  }) || null;
-}
-
 /* ---------- teleport targets (XR) ---------- */
 
 export function addTeleportSurface(mesh) {
@@ -116,11 +105,4 @@ export function isTeleportBlocked(x, z, halfExtent) {
       && z > box.minZ - halfExtent && z < box.maxZ + halfExtent) return true;
   }
   return false;
-}
-
-export function clearRegistries() {
-  collisionBoxes.clear();
-  interactives.length = 0;
-  teleportTargets.length = 0;
-  teleportExclusions.clear();
 }

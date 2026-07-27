@@ -1,6 +1,6 @@
 /* Station 2: Surveying the Site. */
 
-import { byId, el, clear, replaceChildren } from '../../core/dom.js';
+import { byId, el, clear } from '../../core/dom.js';
 import { SURVEY_ITEMS, SURVEY_CLASSES, RECORDING_METHODS, CONCENTRATION_QUESTIONS, surveyItemById } from '../../data/survey.js';
 import { SURVEY_ZONES, UNITS, UNIT_ORDER } from '../../data/site.js';
 import {
@@ -8,7 +8,6 @@ import {
   setUnitRecommendation, hasCapability
 } from '../../core/state.js';
 import { record, recordOnce } from '../../core/telemetry.js';
-import { surveyReadyForPlacement } from '../../core/evidence.js';
 import * as modal from '../modal.js';
 import { toast, announce } from '../toast.js';
 import { drawInspection } from '../inspectionArt.js';
@@ -267,19 +266,10 @@ export function initSurvey() {
   byId('closeSurveySummaryBtn').addEventListener('click', () => modal.close('surveySummaryOverlay'));
 }
 
-export function surveyProgressText() {
-  const classified = Object.values(state.survey.records).filter((r) => r.classification).length;
-  return `${classified} of ${SURVEY_ITEMS.length} examined, ${state.survey.mapped.length} recorded`;
-}
-
 export function nextUnexaminedSurveyId() {
   const next = SURVEY_ITEMS.find((i) => {
     const rec = state.survey.records[i.id];
     return !rec || !rec.classification || !rec.recordQuality;
   });
   return next ? next.id : null;
-}
-
-export function isSurveyPlacementReady() {
-  return surveyReadyForPlacement();
 }

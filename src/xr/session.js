@@ -14,7 +14,7 @@
 
 import * as THREE from 'three';
 import { SITE } from '../data/site.js';
-import { state, setSetting } from '../core/state.js';
+import { state } from '../core/state.js';
 import { emit, EVENTS } from '../core/events.js';
 import { byId } from '../core/dom.js';
 import { scene, camera, renderer } from '../scene/renderer.js';
@@ -49,18 +49,18 @@ const axisState = {
   scrollCooldown: 0
 };
 
-export function isXRSupported() {
-  return supported;
-}
-
 export function isPresenting() {
   return presenting;
 }
 
-export async function initXR() {
-  const button = byId('enterVrBtn');
+/* A cheap availability check run at boot, before any session exists, so the
+   start gate can tell the learner whether a headset was detected. It does not
+   build the XR rig: that needs the renderer, which is only created once an
+   investigation has actually started. */
+export async function probeXRSupport() {
   const note = byId('xrNote');
   if (!navigator.xr || !window.isSecureContext) {
+    supported = false;
     if (note) note.textContent = 'Virtual reality needs a headset browser and a secure connection. The full investigation runs here without it.';
     return false;
   }
@@ -69,15 +69,35 @@ export async function initXR() {
   } catch (err) {
     supported = false;
   }
-  if (!supported) {
-    if (note) note.textContent = 'No immersive VR device was detected. The full investigation runs here without one.';
-    return false;
+  if (note) {
+    note.textContent = supported
+      ? 'An immersive VR device was detected. Once you are on site you can switch to VR from the toolbar, and switch back at any time.'
+      : 'No immersive VR device was detected. The full investigation runs here without one.';
   }
+  return supported;
+}
+
+/* Builds the XR rig and reveals the in-session "Enter VR" control. Called once
+   the renderer exists (i.e. after an investigation has started). Safe to call
+   when VR is unavailable — it simply does nothing. Re-checks support in case
+   the boot-time probe had not resolved yet. */
+export async function initXR() {
+  const button = byId('enterVrBtn');
+  if (!navigator.xr || !window.isSecureContext || !renderer) return false;
+  if (!supported) {
+    try {
+      supported = await navigator.xr.isSessionSupported('immersive-vr');
+    } catch (err) {
+      supported = false;
+    }
+  }
+  if (!supported) return false;
 
   buildRig();
-  button.style.display = 'inline-flex';
-  if (note) note.textContent = 'An immersive VR device is available. The browser version stays fully usable either way.';
-  button.addEventListener('click', toggleSession);
+  if (button) {
+    button.style.display = 'inline-flex';
+    button.addEventListener('click', toggleSession);
+  }
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
   return true;
@@ -568,16 +588,4 @@ function onSelectStart(event) {
 
 function onSelectEnd() {
   // Selection is edge-triggered on press; nothing to release.
-}
-
-export function xrComfortSummary() {
-  return {
-    locomotion: state.settings.xr.locomotion,
-    snapAngle: state.settings.xr.snapAngle,
-    vignette: state.settings.xr.vignette
-  };
-}
-
-export function setXRComfort(key, value) {
-  setSetting(`xr.${key}`, value);
 }

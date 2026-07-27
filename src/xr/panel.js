@@ -139,10 +139,6 @@ export class XRPanel {
     this.texture.needsUpdate = true;
   }
 
-  markDirty() {
-    this.dirty = true;
-  }
-
   draw(doc) {
     const ctx = this.ctx;
     ctx.fillStyle = COLOURS.paper;

@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { SITE, LOCATIONS, UNITS, SURVEY_POSITIONS } from '../data/site.js';
 import { scene, onQualityChange, currentQuality } from './renderer.js';
-import { groundTexture, pathTexture, waterTexture, strataTexture, bumpTexture, signTexture } from './textures.js';
+import { groundTexture, pathTexture, waterTexture, strataTexture, bumpTexture } from './textures.js';
 import {
   addCollisionBox, registerInteractive, addTeleportSurface, addTeleportExclusion, isClearOf
 } from './registry.js';

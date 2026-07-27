@@ -13,8 +13,7 @@ import { state, setDatingReliability, setMethodSort, setDatingConclusion } from 
 import { record } from '../../core/telemetry.js';
 import { availableTypologyLines, availableStratigraphicLines, applicableDatingQuestions } from '../../core/evidence.js';
 import * as modal from '../modal.js';
-import { toast } from '../toast.js';
-import { button, actionRow, showFeedback, sectionHeading, emptyState } from '../components.js';
+import { button, showFeedback, sectionHeading, emptyState } from '../components.js';
 
 const PANEL = 'datingOverlay';
 

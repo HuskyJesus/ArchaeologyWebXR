@@ -1,7 +1,7 @@
 /* The heads-up display: station banner, project time, objective button,
    reticle, interaction prompt and minimap. */
 
-import { byId, el, clear, replaceChildren, isTouchLikely } from '../core/dom.js';
+import { byId, el, replaceChildren, isTouchLikely } from '../core/dom.js';
 import { SITE, LOCATIONS, UNITS, SURVEY_POSITIONS } from '../data/site.js';
 import { SURVEY_ITEMS } from '../data/survey.js';
 import { STATIONS } from '../data/text.js';

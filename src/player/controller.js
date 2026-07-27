@@ -98,14 +98,6 @@ function clampPitch() {
   player.pitch = Math.max(-1.15, Math.min(1.15, player.pitch));
 }
 
-export function isPointerLocked() {
-  return pointerLocked;
-}
-
-export function releasePointer() {
-  if (document.pointerLockElement) document.exitPointerLock();
-}
-
 export function updatePlayer(dt) {
   if (player.frozen) return;
   let forward = 0;
@@ -190,18 +182,6 @@ export function faceTowards(x, z) {
   const dz = z - player.position.z;
   player.yaw = Math.atan2(-dx, -dz);
   player.pitch = 0;
-  applyToCamera();
-}
-
-export function teleportTo(x, z) {
-  player.position.x = Math.max(-(SITE.half - 1.2), Math.min(SITE.half - 1.2, x));
-  player.position.z = Math.max(-(SITE.half - 1.2), Math.min(SITE.half - 1.2, z));
-  player.velocity.set(0, 0, 0);
-  applyToCamera();
-}
-
-export function turnBy(radians) {
-  player.yaw += radians;
   applyToCamera();
 }
 

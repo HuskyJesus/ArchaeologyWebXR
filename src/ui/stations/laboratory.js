@@ -6,7 +6,7 @@
    changes what a learner thinks a level means. */
 
 import { byId, el, clear } from '../../core/dom.js';
-import { ARTIFACTS, ANALYSIS_FIELDS, CONFIDENCE_LEVELS, artifactById, scoreAnalysisAnswer } from '../../data/artifacts.js';
+import { ANALYSIS_FIELDS, CONFIDENCE_LEVELS, artifactById, scoreAnalysisAnswer } from '../../data/artifacts.js';
 import { state, artifactByUid, recordAnalysis } from '../../core/state.js';
 import { record } from '../../core/telemetry.js';
 import { unitLabel } from '../../core/evidence.js';

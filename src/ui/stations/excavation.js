@@ -5,9 +5,9 @@
    determines provenience, which finds are recovered, which are lost, and
    whether a dating sample is usable. */
 
-import { byId, el, clear, replaceChildren } from '../../core/dom.js';
-import { UNITS, unitById } from '../../data/site.js';
-import { levelsForUnit, levelAt } from '../../data/excavation.js';
+import { byId, el, clear } from '../../core/dom.js';
+import { unitById } from '../../data/site.js';
+import { levelsForUnit } from '../../data/excavation.js';
 import { artifactById } from '../../data/artifacts.js';
 import { featureById } from '../../data/features.js';
 import {
@@ -17,7 +17,7 @@ import {
 import { applyStepChoice, resolveLevel } from '../../core/excavationEngine.js';
 import { record, recordOnce } from '../../core/telemetry.js';
 import * as modal from '../modal.js';
-import { toast, announce } from '../toast.js';
+import { toast } from '../toast.js';
 import { showBriefing } from '../briefing.js';
 import { button, actionRow, showFeedback, sectionHeading, progressLine, emptyState } from '../components.js';
 import { availableUnits } from './survey.js';
@@ -350,10 +350,4 @@ function onUnitComplete(unitId) {
 export function initExcavation() {
   byId('closeExcavationBtn').addEventListener('click', () => modal.close(PANEL));
   byId('closeUnitChoiceBtn').addEventListener('click', () => modal.close(CHOICE_PANEL));
-}
-
-export function excavationProgressText() {
-  const unitId = activeUnitId();
-  if (!unitId) return 'No unit opened';
-  return `${levelsCompleted(unitId)} of ${levelsForUnit(unitId).length} levels`;
 }

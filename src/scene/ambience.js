@@ -13,9 +13,6 @@ let context = null;
 let master = null;
 let started = false;
 
-export const AMBIENCE_DESCRIPTION =
-  'Ambient sound: steady wind across the open terrace, moving water from the river below the bluff, and intermittent machinery from the highway corridor to the south.';
-
 export function initAmbience() {
   on(EVENTS.settingsChanged, applyMute);
   const start = () => {
@@ -40,8 +37,6 @@ export function startAmbience() {
 
   master = context.createGain();
   master.gain.value = state.settings.muted ? 0 : 0.16;
-  master.connect(context.destination);
-
   master.connect(context.destination);
   addWind();
   addRiver();

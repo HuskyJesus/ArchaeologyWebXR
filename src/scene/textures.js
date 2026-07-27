@@ -231,19 +231,3 @@ export function skyTexture() {
   });
 }
 
-/* Generic label plate used for world-space station labels and XR panels. */
-export function panelTexture(draw, width = 1024, height = 640) {
-  const { canvas, ctx } = makeCanvas(width, height);
-  draw(ctx, width, height);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  return { texture: tex, canvas, ctx };
-}
-
-export function disposeAll() {
-  cache.forEach((tex) => {
-    if (tex && typeof tex.dispose === 'function') tex.dispose();
-  });
-  cache.clear();
-}

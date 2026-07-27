@@ -2,7 +2,7 @@
    working excavation rather than a set of primitives. */
 
 import * as THREE from 'three';
-import { signTexture, meshScreenTexture, bumpTexture } from './textures.js';
+import { signTexture, meshScreenTexture } from './textures.js';
 
 export const MATERIALS = {
   wood: () => new THREE.MeshStandardMaterial({ color: 0x8a6b42, roughness: 0.86 }),

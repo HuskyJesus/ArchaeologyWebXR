@@ -7,7 +7,7 @@
    of places rather than a walk across the site. */
 
 import { byId, el, clear } from '../core/dom.js';
-import { LOCATIONS, UNITS } from '../data/site.js';
+import { LOCATIONS } from '../data/site.js';
 import { SURVEY_ITEMS } from '../data/survey.js';
 import { STATIONS } from '../data/text.js';
 import { state } from '../core/state.js';

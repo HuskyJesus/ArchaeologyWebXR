@@ -8,11 +8,11 @@
    not actually produce. */
 
 import { state, levelsCompleted, computeLevelProvenience } from './state.js';
-import { SURVEY_ITEMS, surveyItemById } from '../data/survey.js';
+import { SURVEY_ITEMS } from '../data/survey.js';
 import { artifactById } from '../data/artifacts.js';
 import { featureById } from '../data/features.js';
-import { levelsForUnit, levelAt, potentialFinds } from '../data/excavation.js';
-import { UNITS, unitById } from '../data/site.js';
+import { levelsForUnit, potentialFinds } from '../data/excavation.js';
+import { unitById } from '../data/site.js';
 import { radiocarbonFor, TYPOLOGY_LINES, STRATIGRAPHIC_LINES, DATING_QUESTIONS } from '../data/dating.js';
 import { ETHICS_SCENARIOS } from '../data/ethics.js';
 import { SYNTHESIS_DOMAINS, evaluateStatement } from '../data/synthesis.js';

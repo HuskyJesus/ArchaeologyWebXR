@@ -81,6 +81,9 @@ export function initRenderer(container) {
 
 export function onResize() {
   if (!renderer || !camera) return;
+  // During an immersive session the XR system owns the camera and framebuffer;
+  // resizing the desktop canvas or touching the projection would fight it.
+  if (renderer.xr && renderer.xr.isPresenting) return;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);

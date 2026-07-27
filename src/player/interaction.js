@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { camera, scene, renderer } from '../scene/renderer.js';
-import { interactionMetaFor, interactiveList } from '../scene/registry.js';
+import { interactionMetaFor } from '../scene/registry.js';
 import { state, unitProgress } from '../core/state.js';
 import { SITE, unitById } from '../data/site.js';
 import { surveyItemById } from '../data/survey.js';
@@ -132,8 +132,4 @@ function applyEmissive(root, on) {
       node.material.emissiveIntensity = node.userData.baseEmissiveIntensity;
     }
   });
-}
-
-export function clearHighlight() {
-  setHighlight(null);
 }

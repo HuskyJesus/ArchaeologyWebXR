@@ -10,7 +10,7 @@ import { state, levelsCompleted } from '../core/state.js';
 import { scene } from './renderer.js';
 import {
   addCollisionBox, removeCollisionBox, registerInteractive, unregisterInteractive,
-  addTeleportExclusion, findInteractiveById
+  addTeleportExclusion
 } from './registry.js';
 import { strataTexture, signTexture, groundTexture } from './textures.js';
 import { MATERIALS, buildBucket } from './props.js';
@@ -289,9 +289,4 @@ export function refreshUnitVisual(unitId) {
 
 export function refreshAllUnitVisuals() {
   state.units.opened.forEach(refreshUnitVisual);
-}
-
-export function unitPitDepth(unitId) {
-  const entry = pits.get(unitId);
-  return entry ? entry.depth : 0;
 }

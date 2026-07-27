@@ -5,7 +5,7 @@
    explicit alternative reading are all present. */
 
 import { byId, el, clear } from '../../core/dom.js';
-import { FEATURES, featureById } from '../../data/features.js';
+import { featureById } from '../../data/features.js';
 import { CONFIDENCE_LEVELS } from '../../data/artifacts.js';
 import { state, featureRecord, updateFeature, hasCapability } from '../../core/state.js';
 import { record } from '../../core/telemetry.js';

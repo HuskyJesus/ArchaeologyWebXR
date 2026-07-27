@@ -3,8 +3,8 @@
    a mouse. */
 
 import * as THREE from 'three';
-import { byId, el, clear, prefersReducedMotion, isTouchLikely } from './core/dom.js';
-import { state, replaceState, setStation, setSetting, addNote } from './core/state.js';
+import { byId, el, clear, prefersReducedMotion } from './core/dom.js';
+import { state, setSetting, addNote } from './core/state.js';
 import { hasSave, loadSave, saveSummary, enableAutosave, flushSave, loadSettings, clearSave, canPersist } from './core/save.js';
 import { startSession, resumeSession, record, recordOnce } from './core/telemetry.js';
 import { on, EVENTS } from './core/events.js';
@@ -32,14 +32,14 @@ import { initLaboratory } from './ui/stations/laboratory.js';
 import { initChronology } from './ui/stations/chronology.js';
 import { initFeatures } from './ui/stations/features.js';
 import { initSynthesis } from './ui/stations/synthesis.js';
-import { initEthics, pendingScenario, openEthics } from './ui/stations/ethics.js';
+import { initEthics, pendingScenario } from './ui/stations/ethics.js';
 import { initEvidenceRoom, openEvidenceRoom } from './ui/stations/evidenceRoom.js';
 import { initReport, showResults } from './ui/stations/report.js';
 import { initNotebook, openNotebook } from './ui/notebook.js';
 import { initSettings, openSettings, applyInterfaceSettings } from './ui/settings.js';
 import { startFallback, initFallbackControls, isFallbackActive } from './ui/fallback.js';
 
-import { initXR, isPresenting, updateXR, invalidateXRPanel } from './xr/session.js';
+import { initXR, isPresenting, updateXR, invalidateXRPanel, probeXRSupport } from './xr/session.js';
 
 let lastFrame = performance.now();
 let running = false;
@@ -69,6 +69,9 @@ function boot() {
   on(EVENTS.settingsChanged, applyInterfaceSettings);
   on(EVENTS.stateChanged, onStateChanged);
   exposeDebugHook();
+  // Report headset availability on the start gate. The XR rig itself is only
+  // built once a session starts (see initXR), because it needs the renderer.
+  probeXRSupport().catch(() => {});
   byId('loading').classList.add('hidden');
 }
 

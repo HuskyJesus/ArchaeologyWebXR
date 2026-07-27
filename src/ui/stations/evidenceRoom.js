@@ -3,7 +3,7 @@
 
 import { byId, el, clear } from '../../core/dom.js';
 import { SITE, SURVEY_POSITIONS, UNITS, LOCATIONS } from '../../data/site.js';
-import { SURVEY_ITEMS, surveyItemById } from '../../data/survey.js';
+import { SURVEY_ITEMS } from '../../data/survey.js';
 import { artifactById } from '../../data/artifacts.js';
 import { featureById } from '../../data/features.js';
 import { levelsForUnit } from '../../data/excavation.js';
@@ -14,7 +14,7 @@ import {
 } from '../../core/evidence.js';
 import * as modal from '../modal.js';
 import { toast } from '../toast.js';
-import { button, actionRow, sectionHeading, emptyState, progressLine } from '../components.js';
+import { button, sectionHeading, emptyState, progressLine } from '../components.js';
 import { openReport } from './report.js';
 
 const PANEL = 'evidenceOverlay';
