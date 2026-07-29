@@ -34,6 +34,8 @@ import { SITE, UNITS } from '../src/data/site.js';
 import { isTeleportTargetValid } from '../src/xr/session.js';
 import { addTeleportExclusion, addCollisionBox, removeCollisionBox, removeTeleportExclusion } from '../src/scene/registry.js';
 import { createGateController } from '../src/ui/startGate.js';
+import * as modalManager from '../src/ui/modal.js';
+import { on as onEvent, EVENTS as EVENT_NAMES } from '../src/core/events.js';
 
 /* ------------------------------------------------------------------ */
 
@@ -934,4 +936,144 @@ suite('Interaction: world targeting is inert without a 3D scene', (t) => {
   t.test('targetFromScreenPoint returns null when no renderer/camera exists', () => {
     t.equal(targetFromScreenPoint(100, 100), null);
   });
+});
+
+/* ------------------------------------------------------------------ */
+/* Start-gate rendering guarantees, checked against the shipped stylesheet
+   and markup. The original defect here was invisible dialogs: the gate sat
+   at a higher z-index than the panel overlays and the toast stack, so the
+   discard confirmation and the settings panel opened BEHIND the opaque gate.
+   State-level assertions (class="open") cannot catch that, so these tests
+   pin the stacking order itself. */
+
+suite('Start gate rendering: stacking order and markup guarantees', async (t) => {
+  const css = await (await fetch('../styles/main.css')).text();
+  const zOf = (re) => { const m = css.match(re); return m ? Number(m[1]) : null; };
+  const gateZ = zOf(/\.gate\s*\{[^}]*?z-index:\s*(\d+)/s);
+  const overlayZ = zOf(/\.panelOverlay\s*\{[^}]*?z-index:\s*(\d+)/s);
+  const toastZ = zOf(/#toastStack\s*\{[^}]*?z-index:\s*(\d+)/s);
+
+  t.test('dialog overlays paint above the start gate', () => {
+    t.assert(gateZ !== null && overlayZ !== null, 'gate and panelOverlay z-index values were found');
+    t.assert(overlayZ > gateZ, `panelOverlay z-index ${overlayZ} must exceed the gate's ${gateZ}`);
+  });
+  t.test('toasts paint above the start gate', () => {
+    t.assert(toastZ !== null && toastZ > gateZ, `toastStack z-index ${toastZ} must exceed the gate's ${gateZ}`);
+  });
+
+  const html = await (await fetch('../index.html')).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  t.test('no form element exists, so no button can trigger implicit submission', () => {
+    t.equal(doc.querySelector('form'), null);
+  });
+  t.test('every start-gate button declares type="button"', () => {
+    // Resume, Explore in 3D, Guided Accessible Mode, and Settings.
+    const buttons = [...doc.querySelectorAll('#startGate button')];
+    t.assert(buttons.length >= 4, `expected the gate buttons, found ${buttons.length}`);
+    buttons.forEach((b) => t.equal(b.getAttribute('type'), 'button', b.id || b.textContent.trim()));
+  });
+  t.test('the gate buttons all have unique ids', () => {
+    const ids = [...doc.querySelectorAll('#startGate [id]')].map((n) => n.id);
+    t.equal(new Set(ids).size, ids.length);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Start-gate routing driven through REAL rendered controls: actual buttons in
+   the document, real dispatched MouseEvent clicks, the real modal manager, and
+   a real Escape keydown. This is the browser-event layer the pure controller
+   tests cannot see. */
+
+suite('Start gate DOM: rendered controls route correctly', async (t) => {
+  const overlay = document.createElement('div');
+  overlay.id = 'fxConfirmOverlay';
+  overlay.className = 'panelOverlay';
+  const card = document.createElement('div');
+  card.className = 'panelCard';
+  const heading = document.createElement('h2');
+  heading.textContent = 'Are you sure?';
+  const yes = document.createElement('button');
+  yes.type = 'button'; yes.id = 'fxYes'; yes.textContent = 'Discard and start again';
+  const no = document.createElement('button');
+  no.type = 'button'; no.id = 'fxNo'; no.textContent = 'Keep it';
+  card.append(heading, yes, no);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  const makeButton = (id) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.id = id; b.textContent = id;
+    document.body.appendChild(b);
+    return b;
+  };
+  const startB = makeButton('fxStart');
+  const guidedB = makeButton('fxGuided');
+  const resumeB = makeButton('fxResume');
+  const settingsB = makeButton('fxSettings');
+
+  const log = [];
+  let saved = true;
+  const ctrl = createGateController({
+    hasSave: () => saved,
+    startInMode: (m) => log.push(`start:${m}`),
+    resume: () => log.push('resume'),
+    openSettings: () => log.push('settings'),
+    openConfirm: () => modalManager.open({ id: 'fxConfirmOverlay', dismissible: true }),
+    closeConfirm: () => modalManager.close('fxConfirmOverlay')
+  });
+  startB.addEventListener('click', () => ctrl.requestStart('3d'));
+  guidedB.addEventListener('click', () => ctrl.requestStart('guided'));
+  resumeB.addEventListener('click', () => ctrl.resume());
+  settingsB.addEventListener('click', () => ctrl.openSettings());
+  yes.addEventListener('click', () => ctrl.confirm());
+  no.addEventListener('click', () => modalManager.close('fxConfirmOverlay'));
+  onEvent(EVENT_NAMES.panelClosed, (entry) => {
+    if (entry && entry.id === 'fxConfirmOverlay') ctrl.dismiss();
+  });
+  const click = (el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+  t.test('clicking Start 3D opens the real confirmation overlay and stores the mode', () => {
+    click(startB);
+    t.equal(overlay.classList.contains('open'), true);
+    t.deepEqual(ctrl.pending, { mode: '3d' });
+  });
+  t.test('a real Escape keydown closes the dialog and clears the pending mode', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    t.equal(overlay.classList.contains('open'), false);
+    t.equal(ctrl.pending, null);
+  });
+  t.test('after Escape, clicking Resume resumes and never starts 3D', () => {
+    click(resumeB);
+    t.notIncludes(log, 'start:3d');
+    t.includes(log, 'resume');
+  });
+  t.test('Settings opens immediately despite the save and never touches pending', () => {
+    click(settingsB);
+    t.includes(log, 'settings');
+    t.equal(ctrl.pending, null);
+  });
+  t.test('the cancel button clears pending, and a stale confirm click starts nothing', () => {
+    click(guidedB);
+    t.deepEqual(ctrl.pending, { mode: 'guided' });
+    click(no);
+    t.equal(ctrl.pending, null);
+    click(yes); // stale confirm after cancel
+    t.notIncludes(log, 'start:guided');
+  });
+  t.test('confirming executes the selected mode exactly once, even if clicked twice', () => {
+    click(startB);
+    click(yes);
+    click(yes);
+    t.equal(log.filter((entry) => entry === 'start:3d').length, 1);
+    t.equal(ctrl.pending, null);
+  });
+  t.test('with no save, the start buttons begin immediately without any dialog', () => {
+    saved = false;
+    click(guidedB);
+    t.includes(log, 'start:guided');
+    t.equal(overlay.classList.contains('open'), false);
+  });
+
+  modalManager.closeAll();
+  [overlay, startB, guidedB, resumeB, settingsB].forEach((node) => node.remove());
 });

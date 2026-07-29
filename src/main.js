@@ -266,6 +266,10 @@ function enterGuidedMode(reason) {
 }
 
 function beginSession(name, resumed, mode) {
+  // Nothing opened at the gate may follow the learner into the session. This
+  // also fires panelClosed for the discard confirmation if it is somehow
+  // still open, which clears any pending start mode via the gate controller.
+  modal.closeAll();
   byId('startGate').style.display = 'none';
   state.studentName = name;
   enableAutosave();

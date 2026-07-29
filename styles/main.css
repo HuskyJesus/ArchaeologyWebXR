@@ -108,7 +108,11 @@ canvas#sceneCanvas { display: block; touch-action: none; }
 /* ---------- start gate ---------- */
 
 .gate {
-  position: fixed; inset: 0; z-index: 90;
+  /* Must sit BELOW the panel overlays (80) and the toast stack (70): the
+     gate opens real dialogs (settings, the discard confirmation) and shows
+     toasts, and all of them have to paint on top of it. A gate above them
+     silently swallows every dialog opened from the start screen. */
+  position: fixed; inset: 0; z-index: 60;
   display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 30%, #2a2d1e, #101208);
   padding: 24px; overflow: auto;
