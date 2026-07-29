@@ -1,6 +1,6 @@
 # Accessibility Report — Redstone Bluff Archaeological Investigation
 
-_Last updated: 2026-07-27_
+_Last updated: 2026-07-29 (final functional/accessibility regression review)_
 
 ## Accessibility target
 
@@ -51,7 +51,7 @@ WebXR and the 3D scene are **progressive enhancements** and are never required.
 | axe‑core | 4.10.2 | WCAG 2.0/2.1/2.2 A & AA rulesets | 0 violations across gate, guided station panel, report form, results panel, and 3D HUD after fixes (1 violation found and fixed). 1 `color-contrast` result was returned as *incomplete* (14 nodes over semi‑transparent/canvas backgrounds axe cannot compute) and was verified manually — see below. |
 | Custom contrast script | — | Every text/UI color pair in `styles/main.css` (relative‑luminance formula, rgba flattened over real backdrops) | Failing pairs identified and fixed; recomputed to pass. |
 | DOM integrity check | — | Duplicate IDs, single `main`, orphan `label[for]`, empty buttons, broken `aria-labelledby`/`describedby`, landmark counts | All clean: 0 duplicate IDs, 1 `main`, 0 orphan labels, 0 empty buttons, 0 broken ARIA refs. |
-| Project logic test suite | — | `tests/index.html` (80 pure‑logic tests: state, day costs, gating, evidence, migration, assessment, telemetry) | 80/80 passing. |
+| Project logic test suite | — | `tests/index.html` (97 pure‑logic tests: state, day costs, gating, evidence, migration, assessment, telemetry, start‑gate routing, inert world‑targeting) | 97/97 passing. |
 
 _Lighthouse and the Nu HTML validator were not run in this environment. Their
 checks are substantially covered by axe‑core (accessibility) and the DOM
@@ -84,6 +84,21 @@ next step — see "Recommended next actions."_
 9. **Save / resume / new / reset** — resume restores the exact state and mode
    without re‑charging days or re‑awarding rewards; starting a new
    investigation over a save requires explicit confirmation.
+10. **Guided/3D parity (2026‑07‑29)** — a strong playthrough and a
+   poor‑decision playthrough were each executed in both modes with identical
+   choices (the equipment station driven through the real panel in each mode,
+   the remainder through the shared simulation helpers). Evidence identifiers,
+   day logs, assessment bands, and investigation summaries were byte‑identical
+   between modes in both scenarios, and the poor‑decision path still permitted
+   report submission.
+11. **Start‑gate regression matrix (2026‑07‑29)** — direct start (both modes),
+   direct Settings, direct Resume, cancel‑then‑resume, Escape‑dismiss,
+   repeated alternation, Enter/Space activation, preference changes before
+   start/resume, and reload‑after‑cancel. No pending action ever leaked to
+   another button and none survived a reload.
+12. **Corrupt and legacy saves (2026‑07‑29)** — unparseable saves are reported
+   at the gate with Resume disabled; version‑1 saves migrate; future‑version
+   saves are rejected without crashing.
 
 ### Not performed in this environment (do not assume covered)
 
@@ -113,6 +128,9 @@ next step — see "Recommended next actions."_
 | 12 | 1.4.13 / forced‑colors | No Windows High Contrast support. | Added a `@media (forced-colors: active)` block preserving borders/state cues. |
 | 13 | 2.3.3 Motion | Reduced‑motion only covered a subset. | Reduced‑motion now also disables pseudo‑element animation, caps iteration counts, and forces `scroll-behavior: auto`; honors both the OS preference and the in‑app setting. |
 | 14 | 3.2.6 Consistent Help | Guided mode lacked a "Controls and help" affordance. | Added a Controls/help button to the guided header; help text now documents keyboard, touch, guided‑mode, and XR controls. |
+| 15 | 2.1.1 Keyboard | Pressing Enter or Space with focus on a start‑gate or guided‑mode button threw an uncaught error: the global shortcut handler raycast from the 3D camera, which does not exist before a 3D session. The same raycast could also steal Enter/Space from a focused control in 3D mode and, after a 3D→guided switch, activate world objects from behind the guided page. | `targetFromCamera`/`targetFromScreenPoint` are now inert (return null) without a camera; the world‑interact shortcut is skipped in guided mode and never fires while an interactive control has keyboard focus. Covered by two new regression tests. |
+| 16 | 3.3.7 / settings persistence | Accessibility preferences changed at the start gate (for example larger text or high contrast) were silently reverted by Resume, because loading the save replaced `state.settings` with the older copy stored inside it and never re‑applied the preferences mirror or refreshed the interface CSS. | Resume now re‑applies the stored preferences mirror after loading the save and refreshes the interface, so the learner's latest accessibility choices always win. Verified live: text scale 1.3 and high contrast set at the gate survive Resume, and the investigation still restores exactly (station, days, records). |
+| 17 | Robustness (corrupt saves) | A saved investigation that was not even parseable JSON produced no resume card and no explanation; the learner was still asked to "discard the saved investigation" when starting fresh. | Unparseable saves are now treated like unmigratable ones: the gate explains the save could not be read and disables Resume. Starting fresh works normally. |
 
 ## Remaining issues / unmet‑until‑verified criteria
 

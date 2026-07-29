@@ -22,7 +22,7 @@ import {
 } from '../src/core/evidence.js';
 import { assessmentProfile, BANDS, investigationSummary } from '../src/core/assessment.js';
 import { toCSV, toXAPI, record, recordOnce, startSession } from '../src/core/telemetry.js';
-import { resolveTarget } from '../src/player/interaction.js';
+import { resolveTarget, targetFromCamera, targetFromScreenPoint } from '../src/player/interaction.js';
 import { levelsForUnit, potentialFinds, UNIT_LEVELS } from '../src/data/excavation.js';
 import { SURVEY_ITEMS } from '../src/data/survey.js';
 import { EQUIPMENT_ITEMS } from '../src/data/equipment.js';
@@ -918,5 +918,20 @@ suite('Start gate: each button performs only its own action', (t) => {
     g.ctrl.requestStart('3d'); // set a pending action, then simulate a reload
     const reloaded = makeGate(true);
     t.equal(reloaded.ctrl.pending, null, 'pending is in-memory only and does not survive a reload');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* World targeting before any 3D scene exists. The global keyboard shortcuts
+   (E, Enter, Space) and the touch Interact event call these on every press,
+   including at the start gate and in guided mode where no camera was ever
+   created, so they must return null rather than throw. */
+
+suite('Interaction: world targeting is inert without a 3D scene', (t) => {
+  t.test('targetFromCamera returns null when no renderer/camera exists', () => {
+    t.equal(targetFromCamera(), null);
+  });
+  t.test('targetFromScreenPoint returns null when no renderer/camera exists', () => {
+    t.equal(targetFromScreenPoint(100, 100), null);
   });
 });

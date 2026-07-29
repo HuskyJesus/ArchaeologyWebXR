@@ -147,7 +147,14 @@ function wireGate() {
         beginSession(nameInput.value.trim() || 'Student', false, null);
         return;
       }
-      // Resume in whichever mode the saved preference asks for.
+      // loadSave replaced state.settings with the copy inside the save, which
+      // may be older than the separately mirrored preferences (the mirror is
+      // rewritten on every settings change, including at the start gate before
+      // resuming). Re-applying the mirror keeps the learner's latest
+      // accessibility and comfort choices, and refreshes the interface CSS to
+      // match whatever settings are now in force.
+      applyStoredSettings();
+      // Resume in whichever mode the (freshest) preference asks for.
       beginSession(loaded.studentName || 'Student', true, null);
     },
     openSettings,
@@ -155,7 +162,10 @@ function wireGate() {
     closeConfirm: () => modal.close('confirmOverlay')
   });
 
-  const summary = hasSave() ? saveSummary() : null;
+  // saveSummary() is null when the stored blob is not even parseable JSON;
+  // treat that the same as a save that parsed but could not be migrated, so
+  // the learner is told about it instead of seeing no resume card at all.
+  const summary = hasSave() ? (saveSummary() || { corrupt: true }) : null;
   if (summary && !summary.corrupt) {
     const station = STATIONS.find((s) => s.number === summary.station);
     resumeCard.style.display = 'block';
@@ -362,7 +372,7 @@ function onCanvasSelect(clientX, clientY) {
 
 function wireShortcuts() {
   window.addEventListener('rb:interact', () => {
-    if (modal.anyOpen()) return;
+    if (modal.anyOpen() || isFallbackActive()) return;
     const target = targetFromCamera();
     if (target) activateTarget(target);
   });
@@ -374,6 +384,14 @@ function wireShortcuts() {
       case 'KeyE':
       case 'Enter':
       case 'Space': {
+        // World targeting belongs to the 3D view only. In guided mode the
+        // same activities are reached through real buttons, and a camera left
+        // over from an earlier 3D session must not fire behind the page.
+        if (isFallbackActive()) break;
+        // When an interactive control has keyboard focus, Enter and Space are
+        // the browser's own activation keys; the world raycast must not
+        // steal them from the focused control.
+        if ((e.code === 'Enter' || e.code === 'Space') && isActivatableTarget(e.target)) break;
         const target = targetFromCamera();
         if (target) {
           e.preventDefault();
@@ -430,6 +448,12 @@ function isTypingTarget(node) {
   if (!node) return false;
   const tag = node.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || node.isContentEditable;
+}
+
+/* Controls the browser itself activates with Enter or Space. */
+function isActivatableTarget(node) {
+  if (!node || !node.closest) return false;
+  return !!node.closest('button, a[href], summary, [role="button"], label');
 }
 
 /* ---------- reactions to state changes ---------- */

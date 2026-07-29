@@ -39,11 +39,16 @@ export function targetFromRay(origin, direction, maxDistance = 8) {
 }
 
 export function targetFromCamera() {
+  // Before a 3D session exists (the start gate, or guided mode on a device
+  // that never initialised WebGL) there is no camera to aim from. Keyboard
+  // shortcuts still fire globally, so this must be inert rather than throw.
+  if (!camera || !scene) return null;
   raycaster.setFromCamera(centre, camera);
   return targetFromRay(raycaster.ray.origin, raycaster.ray.direction, 8);
 }
 
 export function targetFromScreenPoint(clientX, clientY) {
+  if (!renderer || !camera || !scene) return null;
   const rect = renderer.domElement.getBoundingClientRect();
   const point = new THREE.Vector2(
     ((clientX - rect.left) / rect.width) * 2 - 1,
