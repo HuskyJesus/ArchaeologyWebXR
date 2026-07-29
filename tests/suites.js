@@ -33,6 +33,7 @@ import { RADIOCARBON_RESULTS, radiocarbonFor } from '../src/data/dating.js';
 import { SITE, UNITS } from '../src/data/site.js';
 import { isTeleportTargetValid } from '../src/xr/session.js';
 import { addTeleportExclusion, addCollisionBox, removeCollisionBox, removeTeleportExclusion } from '../src/scene/registry.js';
+import { createGateController } from '../src/ui/startGate.js';
 
 /* ------------------------------------------------------------------ */
 
@@ -758,5 +759,164 @@ suite('Content integrity', (t) => {
     scan('equipment', EQUIPMENT_ITEMS);
     scan('synthesis', SYNTHESIS_DOMAINS);
     t.deepEqual(offenders, []);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Start-gate button routing. Guards against the class of bug where a start
+   button stores a deferred action that another button (historically Resume)
+   later executes. Each button must perform only its own action. The controller
+   is exercised with spy effects so the exact routing can be asserted without a
+   DOM. `log` records the side effects in order; `pending` exposes the stored
+   action. */
+
+function makeGate(hasSaveInitial) {
+  const log = [];
+  let saved = !!hasSaveInitial;
+  const ctrl = createGateController({
+    hasSave: () => saved,
+    startInMode: (mode) => log.push(`start:${mode}`),
+    resume: () => log.push('resume'),
+    openSettings: () => log.push('settings'),
+    openConfirm: () => log.push('openConfirm'),
+    closeConfirm: () => log.push('closeConfirm')
+  });
+  return { ctrl, log, setSaved: (v) => { saved = !!v; } };
+}
+
+/* Mirrors the real UI wiring: closing the confirm dialog (Cancel, Escape, the
+   persistent close control, or any programmatic close) calls dismiss(). */
+function closeConfirmDialog(g) {
+  g.ctrl.dismiss();
+}
+
+suite('Start gate: each button performs only its own action', (t) => {
+  t.test('1. Start 3D with no save starts a 3D investigation immediately', () => {
+    const g = makeGate(false);
+    g.ctrl.requestStart('3d');
+    t.deepEqual(g.log, ['start:3d']);
+    t.equal(g.ctrl.pending, null);
+  });
+
+  t.test('2. Guided mode with no save starts a guided investigation immediately', () => {
+    const g = makeGate(false);
+    g.ctrl.requestStart('guided');
+    t.deepEqual(g.log, ['start:guided']);
+    t.equal(g.ctrl.pending, null);
+  });
+
+  t.test('3. Settings opens immediately and is not blocked by an existing save', () => {
+    const g = makeGate(true);
+    g.ctrl.openSettings();
+    t.deepEqual(g.log, ['settings']);
+    t.equal(g.ctrl.pending, null, 'settings must not queue a start action');
+  });
+
+  t.test('4. Resume with a save resumes only the saved session', () => {
+    const g = makeGate(true);
+    g.ctrl.resume();
+    t.deepEqual(g.log, ['resume']);
+    t.equal(g.ctrl.pending, null);
+  });
+
+  t.test('5. Start 3D, cancel the confirmation, then Resume: resumes, 3D never starts', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d');
+    t.deepEqual(g.log, ['openConfirm']);
+    t.deepEqual(g.ctrl.pending, { mode: '3d' });
+    closeConfirmDialog(g);
+    t.equal(g.ctrl.pending, null, 'cancelling clears the pending start');
+    g.ctrl.resume();
+    t.deepEqual(g.log, ['openConfirm', 'resume']);
+    t.notIncludes(g.log, 'start:3d', 'Resume must not inherit the start action');
+  });
+
+  t.test('6. Guided, cancel, then Settings: only Settings opens', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('guided');
+    closeConfirmDialog(g);
+    g.ctrl.openSettings();
+    t.notIncludes(g.log, 'start:guided');
+    t.deepEqual(g.log, ['openConfirm', 'settings']);
+  });
+
+  t.test('7. Settings, close it, then Resume: resumes', () => {
+    const g = makeGate(true);
+    g.ctrl.openSettings();
+    // closing settings is unrelated to the confirm dialog and touches no pending
+    g.ctrl.resume();
+    t.deepEqual(g.log, ['settings', 'resume']);
+    t.notIncludes(g.log, 'start:3d');
+    t.notIncludes(g.log, 'start:guided');
+  });
+
+  t.test('8. Start 3D and confirm replacement: a fresh 3D investigation starts', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d');
+    g.ctrl.confirm();
+    t.deepEqual(g.log, ['openConfirm', 'closeConfirm', 'start:3d']);
+    t.equal(g.ctrl.pending, null);
+  });
+
+  t.test('9. Guided and confirm replacement: a fresh guided investigation starts', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('guided');
+    g.ctrl.confirm();
+    t.deepEqual(g.log, ['openConfirm', 'closeConfirm', 'start:guided']);
+    t.equal(g.ctrl.pending, null);
+  });
+
+  t.test('10a. Alternating buttons never executes a previous action', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d'); closeConfirmDialog(g);
+    g.ctrl.requestStart('guided'); closeConfirmDialog(g);
+    g.ctrl.resume();
+    g.ctrl.openSettings();
+    g.ctrl.requestStart('3d'); closeConfirmDialog(g);
+    // Not one start ever ran, because every request was cancelled.
+    t.notIncludes(g.log, 'start:3d');
+    t.notIncludes(g.log, 'start:guided');
+    t.equal(g.ctrl.pending, null);
+    t.deepEqual(g.log.filter((e) => e === 'resume' || e === 'settings'), ['resume', 'settings']);
+  });
+
+  t.test('10b. A newer request replaces the older one; confirm runs only the latest', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d');
+    g.ctrl.requestStart('guided'); // supersedes the 3D request without confirming it
+    g.ctrl.confirm();
+    t.notIncludes(g.log, 'start:3d');
+    t.includes(g.log, 'start:guided');
+  });
+
+  t.test('10c. Resume never executes a still-pending start (defensive)', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d'); // pending set, dialog "open"
+    g.ctrl.resume();           // resume must ignore the pending start entirely
+    t.notIncludes(g.log, 'start:3d');
+    t.includes(g.log, 'resume');
+  });
+
+  t.test('confirm is idempotent: a second confirm cannot start twice', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d');
+    g.ctrl.confirm();
+    g.ctrl.confirm();
+    t.equal(g.log.filter((e) => e === 'start:3d').length, 1);
+  });
+
+  t.test('confirm after cancel does nothing', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('guided');
+    closeConfirmDialog(g);
+    g.ctrl.confirm();
+    t.notIncludes(g.log, 'start:guided');
+  });
+
+  t.test('12. A fresh controller (page reload) carries no pending action', () => {
+    const g = makeGate(true);
+    g.ctrl.requestStart('3d'); // set a pending action, then simulate a reload
+    const reloaded = makeGate(true);
+    t.equal(reloaded.ctrl.pending, null, 'pending is in-memory only and does not survive a reload');
   });
 });

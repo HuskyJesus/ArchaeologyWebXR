@@ -38,12 +38,16 @@ import { initReport, showResults } from './ui/stations/report.js';
 import { initNotebook, openNotebook } from './ui/notebook.js';
 import { initSettings, openSettings, applyInterfaceSettings } from './ui/settings.js';
 import { startFallback, stopFallback, initFallbackControls, isFallbackActive } from './ui/fallback.js';
+import { createGateController } from './ui/startGate.js';
 
 import { initXR, isPresenting, updateXR, invalidateXRPanel, probeXRSupport } from './xr/session.js';
 
 let lastFrame = performance.now();
 let running = false;
 let ethicsPromptCooldown = 0;
+// Declared here, above the boot() call, so wireGate can assign to it during
+// boot without hitting a temporal-dead-zone error.
+let gateController = null;
 
 boot();
 
@@ -116,6 +120,10 @@ function applyStoredSettings() {
 
 /* ---------- start gate ---------- */
 
+/* The start-gate action router (declared near the top of the module). Its
+   contract — store explicitly, run only on confirm, clear on every dismissal,
+   keep Resume and Settings independent — lives in ./ui/startGate.js and is
+   unit-tested there. */
 function wireGate() {
   const nameInput = byId('studentName');
   const resumeCard = byId('resumeCard');
@@ -123,6 +131,29 @@ function wireGate() {
   if (!canPersist) {
     byId('storageNote').textContent = 'This browser is blocking local storage, so your work cannot be saved between visits. Export the CSV and the report before you close the tab.';
   }
+
+  gateController = createGateController({
+    hasSave,
+    startInMode: (mode) => {
+      // A fresh investigation replaces any existing save immediately, so a
+      // reload before the first autosave cannot resurrect the old one.
+      if (hasSave()) clearSave();
+      beginSession(nameInput.value.trim() || 'Student', false, mode);
+    },
+    resume: () => {
+      const loaded = loadSave();
+      if (!loaded) {
+        toast('That saved investigation could not be read. Starting a new one.', 'warn');
+        beginSession(nameInput.value.trim() || 'Student', false, null);
+        return;
+      }
+      // Resume in whichever mode the saved preference asks for.
+      beginSession(loaded.studentName || 'Student', true, null);
+    },
+    openSettings,
+    openConfirm: openDiscardConfirm,
+    closeConfirm: () => modal.close('confirmOverlay')
+  });
 
   const summary = hasSave() ? saveSummary() : null;
   if (summary && !summary.corrupt) {
@@ -133,49 +164,37 @@ function wireGate() {
       `${summary.studentName}, ${station ? station.name : `station ${summary.station}`}, ${summary.daysRemaining} of ${SITE.totalDays} project days left.`));
     byId('resumeDetail').appendChild(el('div', { class: 'subtle' },
       `${summary.artifacts} finds and ${summary.features} features recorded. Last worked on ${new Date(summary.updatedISO).toLocaleString()}.`));
-    byId('resumeBtn').addEventListener('click', () => {
-      const loaded = loadSave();
-      if (!loaded) {
-        toast('That saved investigation could not be read. Starting a new one.', 'warn');
-        beginSession(nameInput.value.trim() || 'Student', false, null);
-        return;
-      }
-      // Resume in whichever mode the saved preference asks for.
-      beginSession(loaded.studentName || 'Student', true, null);
-    });
+    byId('resumeBtn').addEventListener('click', () => gateController.resume());
   } else if (summary && summary.corrupt) {
     resumeCard.style.display = 'block';
     byId('resumeDetail').textContent = 'A saved investigation exists but could not be read. Starting a new one will replace it.';
     byId('resumeBtn').disabled = true;
   }
 
-  const startNew = (mode) => {
-    const name = nameInput.value.trim() || 'Student';
-    if (hasSave()) {
-      confirmDiscard(() => { clearSave(); beginSession(name, false, mode); });
-      return;
-    }
-    beginSession(name, false, mode);
-  };
-
-  byId('startBtn').addEventListener('click', () => startNew('3d'));
-  byId('gateFallbackBtn').addEventListener('click', () => startNew('guided'));
+  byId('startBtn').addEventListener('click', () => gateController.requestStart('3d'));
+  byId('gateFallbackBtn').addEventListener('click', () => gateController.requestStart('guided'));
   nameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') byId('startBtn').click();
+    if (e.key === 'Enter') { e.preventDefault(); byId('startBtn').click(); }
   });
-  byId('gateSettingsBtn').addEventListener('click', openSettings);
+  // Settings opens immediately and is deliberately never gated by an existing
+  // save.
+  byId('gateSettingsBtn').addEventListener('click', () => gateController.openSettings());
+
+  // Whenever the confirm dialog closes for any reason (Cancel, Escape, the
+  // persistent close control, or a programmatic close), the pending start is
+  // dropped. Confirming captures and clears it first, so this is a no-op then.
+  on(EVENTS.panelClosed, (entry) => {
+    if (entry && entry.id === 'confirmOverlay') gateController.dismiss();
+  });
 }
 
-function confirmDiscard(onConfirm) {
+function openDiscardConfirm() {
   const host = byId('confirmBody');
   clear(host);
   host.appendChild(el('p', {}, 'There is already a saved investigation in this browser. Starting a new one permanently discards it.'));
   const actions = el('div', { class: 'actionRow' });
   const yes = el('button', { type: 'button', class: 'btn primary' }, 'Discard it and start again');
-  yes.addEventListener('click', () => {
-    modal.close('confirmOverlay');
-    onConfirm();
-  });
+  yes.addEventListener('click', () => gateController.confirm());
   const no = el('button', { type: 'button', class: 'btn secondary' }, 'Keep it');
   no.addEventListener('click', () => modal.close('confirmOverlay'));
   actions.appendChild(yes);
