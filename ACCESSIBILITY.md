@@ -1,6 +1,33 @@
 # Accessibility Report — Redstone Bluff Archaeological Investigation
 
-_Last updated: 2026-07-29 (final functional/accessibility regression review)_
+_Last updated: 2026-08-05 (HTML-first semantics pass)_
+
+## HTML-first policy
+
+Where a native HTML element exists for a job, the project uses it instead of a
+scripted or ARIA re-implementation, because native semantics are interpreted
+most reliably by assistive technology:
+
+- **Dialogs** are native `<dialog>` elements opened with `showModal()`. The
+  browser provides the modal semantics, top-layer stacking, Escape handling
+  and — crucially — genuine inertness of the page behind the dialog, which a
+  scripted focus trap cannot fully deliver to screen-reader browse mode.
+- **Question groups** are `<fieldset>`/`<legend>`, not `role="group"` divs.
+- **Single-select controls** (confidence levels, settings segments) are native
+  `<input type="radio">` groups styled as buttons: screen readers announce
+  "radio, N of M" and the arrow keys work exactly as in any form.
+- **Multi-select** uses native checkboxes with `<label for>`; text entry uses
+  `<label>`-associated `<input>`/`<textarea>`; grouped mode selection on the
+  start screen uses `<fieldset>`/`<legend>`; expandable technical tools use
+  `<details>`/`<summary>`; sliders are `<input type="range">`.
+- **Tabs** have no native HTML element, so the Evidence Room and Notebook use
+  the standard tabs pattern (`tablist`/`tab`/`tabpanel`, roving tabindex,
+  arrow-key selection) — the one place a scripted pattern is the correct tool.
+- The name field declares `autocomplete="name"` (SC 1.3.5 Identify Input
+  Purpose).
+
+JavaScript still renders content (this is an interactive simulation), but the
+elements it renders are the native ones above.
 
 ## Accessibility target
 
@@ -51,7 +78,7 @@ WebXR and the 3D scene are **progressive enhancements** and are never required.
 | axe‑core | 4.10.2 | WCAG 2.0/2.1/2.2 A & AA rulesets | 0 violations across gate, guided station panel, report form, results panel, and 3D HUD after fixes (1 violation found and fixed). 1 `color-contrast` result was returned as *incomplete* (14 nodes over semi‑transparent/canvas backgrounds axe cannot compute) and was verified manually — see below. |
 | Custom contrast script | — | Every text/UI color pair in `styles/main.css` (relative‑luminance formula, rgba flattened over real backdrops) | Failing pairs identified and fixed; recomputed to pass. |
 | DOM integrity check | — | Duplicate IDs, single `main`, orphan `label[for]`, empty buttons, broken `aria-labelledby`/`describedby`, landmark counts | All clean: 0 duplicate IDs, 1 `main`, 0 orphan labels, 0 empty buttons, 0 broken ARIA refs. |
-| Project logic test suite | — | `tests/index.html` (109 tests: state, day costs, gating, evidence, migration, assessment, telemetry, start‑gate routing, inert world‑targeting, plus DOM‑level suites that click real rendered controls and pin the gate/dialog stacking order in the stylesheet) | 109/109 passing. |
+| Project logic test suite | — | `tests/index.html` (119 tests: state, day costs, gating, evidence, migration, assessment, telemetry, start‑gate routing, inert world‑targeting, plus DOM‑level suites that click real rendered controls and pin the gate/dialog stacking order in the stylesheet) | 119/119 passing. |
 
 _Lighthouse and the Nu HTML validator were not run in this environment. Their
 checks are substantially covered by axe‑core (accessibility) and the DOM
@@ -131,6 +158,8 @@ next step — see "Recommended next actions."_
 | 15 | 2.1.1 Keyboard | Pressing Enter or Space with focus on a start‑gate or guided‑mode button threw an uncaught error: the global shortcut handler raycast from the 3D camera, which does not exist before a 3D session. The same raycast could also steal Enter/Space from a focused control in 3D mode and, after a 3D→guided switch, activate world objects from behind the guided page. | `targetFromCamera`/`targetFromScreenPoint` are now inert (return null) without a camera; the world‑interact shortcut is skipped in guided mode and never fires while an interactive control has keyboard focus. Covered by two new regression tests. |
 | 16 | 3.3.7 / settings persistence | Accessibility preferences changed at the start gate (for example larger text or high contrast) were silently reverted by Resume, because loading the save replaced `state.settings` with the older copy stored inside it and never re‑applied the preferences mirror or refreshed the interface CSS. | Resume now re‑applies the stored preferences mirror after loading the save and refreshes the interface, so the learner's latest accessibility choices always win. Verified live: text scale 1.3 and high contrast set at the gate survive Resume, and the investigation still restores exactly (station, days, records). |
 | 17 | Robustness (corrupt saves) | A saved investigation that was not even parseable JSON produced no resume card and no explanation; the learner was still asked to "discard the saved investigation" when starting fresh. | Unparseable saves are now treated like unmigratable ones: the gate explains the save could not be read and disables Resume. Starting fresh works normally. |
+| 19 | 1.3.5 Identify Input Purpose | The student-name field carried `autocomplete="off"`, so browsers and assistive tools could not identify or fill it. | Now `autocomplete="name"`. |
+| 20 | 1.3.1 / 4.1.2 (HTML-first) | Dialogs were scripted div overlays (keyboard focus trapped, but the page behind them was not inert to screen-reader browse mode); question groups were `role="group"` divs; single-select controls were `aria-pressed` toggle buttons; tabs were plain toggle buttons with no arrow-key model. | Converted to native `<dialog>`+`showModal()` (26 overlays), `<fieldset>`/`<legend>` (15 groups), native radio groups (confidence and settings segments), and the standard tabs pattern with roving tabindex and arrow keys. Verified live: background truly inert behind dialogs, Escape honours the dismissible flag, radios persist state, tabs arrow-navigate, and no reflow regression at 320 px. |
 | 18 | 2.4.7 / visual presentation of dialogs | Every dialog opened from the start screen — the discard confirmation, Settings, and help — rendered BEHIND the opaque start gate (`.gate` had z‑index 90; `.panelOverlay` 80; toasts 70), so buttons appeared to do nothing. Focus even moved into the invisible dialog, leaving keyboard users typing into a panel they could not see. Clicking Resume hid the gate and revealed the stale dialog, which read as "Resume ran the other button's action." | The gate now sits at z‑index 60, below both the panel overlays and the toast stack, so start‑screen dialogs and status toasts paint on top of it. Verified with rendered hit‑testing (`document.elementFromPoint` at the dialog centre) and a screenshot, plus a stylesheet regression test that pins panelOverlay > gate and toastStack > gate. `beginSession` additionally closes any dialog left open at the gate. |
 
 ## Remaining issues / unmet‑until‑verified criteria
@@ -141,20 +170,15 @@ For each, WCAG SC · affected interface · user impact · mitigation · next act
    Users relying on AT may hit a nuance not caught by static analysis · Semantics
    verified with axe‑core + DOM inspection; reading order checked · **Run a full
    pass with VoiceOver and NVDA** · High.
-2. **4.1.2 — Tab widgets** (`Evidence Room`, `Notebook`) · screen‑reader users ·
-   Tabs are implemented as labeled toggle buttons with `aria-pressed`
-   (keyboard‑operable, named) rather than the ARIA `tablist`/`tab`/`tabpanel`
-   pattern with arrow‑key traversal · Functional and operable today ·
-   **Upgrade to the full ARIA Tabs pattern** · Medium.
-3. **1.4.11 — color‑contrast (axe incomplete, 14 nodes)** · assorted text over
+2. **1.4.11 — color‑contrast (axe incomplete, 14 nodes)** · assorted text over
    semi‑transparent tints/canvas · axe could not compute these automatically ·
    Palette measured manually and adjusted to pass · **Re‑confirm with a manual
    sampler on final colors** · Low.
-4. **1.4.13 — forced‑colors** · Windows High Contrast users · Rules added but not
+3. **1.4.13 — forced‑colors** · Windows High Contrast users · Rules added but not
    verified on a forced‑colors OS · **Verify on Windows High Contrast** · Medium.
-5. **2.5.x / VR — WebXR** · headset users · Comfort features implemented, not
+4. **2.5.x / VR — WebXR** · headset users · Comfort features implemented, not
    hardware‑tested · See _WebXR limitations_ · Medium (XR is optional).
-6. **4.1.3 — time‑cost announcements** · screen‑reader users · Day costs are
+5. **4.1.3 — time‑cost announcements** · screen‑reader users · Day costs are
    written to the notebook and shown in the HUD/guided stats; not every
    individual day charge is spoken aloud · The three‑week budget is a
    resource system, never a real‑time timer, so there is no time pressure ·
@@ -226,5 +250,4 @@ recorded in this document.
 1. Full screen‑reader pass (VoiceOver + NVDA). _High._
 2. Verify forced‑colors on Windows High Contrast. _Medium._
 3. On‑device WebXR comfort/readability check. _Medium._
-4. Upgrade Evidence Room / Notebook tabs to the ARIA Tabs pattern. _Medium._
-5. Run Lighthouse and the Nu HTML validator in CI. _Low._
+4. Run Lighthouse and the Nu HTML validator in CI. _Low._

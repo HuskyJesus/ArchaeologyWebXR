@@ -147,7 +147,7 @@ function fieldBlock(def, field, spec) {
     ` ${field.prompt}`));
 
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
-  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': field.prompt });
+  const choices = el('fieldset', { class: 'choiceStack choiceGroup' }, el('legend', { class: 'visuallyHidden' }, field.prompt));
   const multi = !!spec.multi;
   const current = draft[field.id];
 

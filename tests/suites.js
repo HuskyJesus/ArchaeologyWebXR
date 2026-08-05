@@ -35,6 +35,7 @@ import { isTeleportTargetValid } from '../src/xr/session.js';
 import { addTeleportExclusion, addCollisionBox, removeCollisionBox, removeTeleportExclusion } from '../src/scene/registry.js';
 import { createGateController } from '../src/ui/startGate.js';
 import * as modalManager from '../src/ui/modal.js';
+import { tabStrip } from '../src/ui/components.js';
 import { on as onEvent, EVENTS as EVENT_NAMES } from '../src/core/events.js';
 
 /* ------------------------------------------------------------------ */
@@ -976,6 +977,116 @@ suite('Start gate rendering: stacking order and markup guarantees', async (t) =>
     const ids = [...doc.querySelectorAll('#startGate [id]')].map((n) => n.id);
     t.equal(new Set(ids).size, ids.length);
   });
+  t.test('every overlay panel is a native dialog element', () => {
+    const overlays = [...doc.querySelectorAll('.panelOverlay')];
+    t.assert(overlays.length >= 20, `expected the overlay panels, found ${overlays.length}`);
+    overlays.forEach((node) => t.equal(node.tagName, 'DIALOG', node.id));
+  });
+  t.test('the name field declares its input purpose (SC 1.3.5)', () => {
+    t.equal(doc.getElementById('studentName').getAttribute('autocomplete'), 'name');
+  });
+  t.test('the tab containers are tablists', () => {
+    t.equal(doc.getElementById('evidenceTabs').getAttribute('role'), 'tablist');
+    t.equal(doc.getElementById('notebookTabs').getAttribute('role'), 'tablist');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The modal manager on a real <dialog> element: showModal/close and the
+   Escape ('cancel') routing that keeps the dismissible flag authoritative. */
+
+suite('Modal manager: native dialog integration', (t) => {
+  const dlg = document.createElement('dialog');
+  dlg.id = 'fxNativeDialog';
+  const h = document.createElement('h2');
+  h.textContent = 'Fixture dialog';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'ok';
+  dlg.append(h, btn);
+  document.body.appendChild(dlg);
+
+  t.test('open() uses showModal and close() closes the dialog', () => {
+    modalManager.open({ id: 'fxNativeDialog', dismissible: true });
+    t.equal(dlg.open, true);
+    t.equal(dlg.classList.contains('open'), true);
+    modalManager.close('fxNativeDialog');
+    t.equal(dlg.open, false);
+    t.equal(modalManager.isOpen('fxNativeDialog'), false);
+  });
+  t.test('Escape closes a dismissible native dialog through the manager', () => {
+    modalManager.open({ id: 'fxNativeDialog', dismissible: true });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    t.equal(dlg.open, false);
+    t.equal(modalManager.anyOpen(), false);
+  });
+  t.test('a non-dismissible native dialog survives Escape and its cancel event', () => {
+    modalManager.open({ id: 'fxNativeDialog', dismissible: false });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    dlg.dispatchEvent(new Event('cancel', { cancelable: true }));
+    t.equal(dlg.open, true, 'stays open until the required action is taken');
+    modalManager.setDismissible('fxNativeDialog', true);
+    modalManager.close('fxNativeDialog');
+    t.equal(dlg.open, false);
+  });
+
+  dlg.remove();
+});
+
+/* ------------------------------------------------------------------ */
+/* The shared tab strip: real tab semantics with roving tabindex and
+   arrow-key selection, driven through actual DOM events. */
+
+suite('Tab strip: native-pattern semantics and arrow keys', (t) => {
+  const strip = document.createElement('div');
+  strip.id = 'fxTabs';
+  const panel = document.createElement('div');
+  panel.id = 'fxTabPanel';
+  document.body.append(strip, panel);
+  const tabs = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }];
+  const picks = [];
+  const renderTabs = (active, focus = false) =>
+    tabStrip(strip, panel, tabs, active, (id, viaKeyboard) => {
+      picks.push(id);
+      renderTabs(id, viaKeyboard);
+    }, focus);
+  renderTabs('a');
+
+  t.test('roles, selection state and roving tabindex are correct', () => {
+    t.equal(strip.getAttribute('role'), 'tablist');
+    const btns = [...strip.querySelectorAll('[role="tab"]')];
+    t.equal(btns.length, 3);
+    t.equal(btns[0].getAttribute('aria-selected'), 'true');
+    t.equal(btns[0].getAttribute('tabindex'), '0');
+    t.equal(btns[1].getAttribute('aria-selected'), 'false');
+    t.equal(btns[1].getAttribute('tabindex'), '-1');
+    t.equal(panel.getAttribute('role'), 'tabpanel');
+    t.equal(panel.getAttribute('aria-labelledby'), 'fxTabs-tab-a');
+  });
+  t.test('ArrowRight selects the next tab; End jumps to the last', () => {
+    strip.querySelector('#fxTabs-tab-a')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    t.deepEqual(picks, ['b']);
+    t.equal(panel.getAttribute('aria-labelledby'), 'fxTabs-tab-b');
+    strip.querySelector('#fxTabs-tab-b')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    t.deepEqual(picks, ['b', 'c']);
+  });
+  t.test('ArrowLeft wraps from the first tab to the last', () => {
+    picks.length = 0;
+    renderTabs('a');
+    strip.querySelector('#fxTabs-tab-a')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    t.deepEqual(picks, ['c']);
+  });
+  t.test('clicking a tab selects it', () => {
+    picks.length = 0;
+    renderTabs('a');
+    strip.querySelector('#fxTabs-tab-b').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    t.deepEqual(picks, ['b']);
+  });
+
+  strip.remove(); panel.remove();
 });
 
 /* ------------------------------------------------------------------ */

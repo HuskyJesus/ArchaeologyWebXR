@@ -37,7 +37,7 @@
     </div>
 
     <label class="fieldLabel" for="studentName">Your name</label>
-    <input type="text" id="studentName" maxlength="60" autocomplete="off" placeholder="Enter your name">
+    <input type="text" id="studentName" maxlength="60" autocomplete="name" placeholder="Enter your name">
 
     <fieldset class="modeChoice">
       <legend>Choose how to explore</legend>
@@ -122,24 +122,24 @@
 
 <!-- ============================ Panels ============================ -->
 
-<div id="briefingOverlay" class="panelOverlay">
+<dialog id="briefingOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2 id="briefingTitle">Field briefing</h2>
     <div id="briefingBody"></div>
     <div class="actionRow"><button type="button" class="btn primary" id="briefingContinueBtn">Continue</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="onboardingOverlay" class="panelOverlay">
+<dialog id="onboardingOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Getting around the site</h2>
     <div id="onboardingSteps" class="stepList"></div>
     <p>Your first task is the field kit. It opens next.</p>
     <div class="actionRow"><button type="button" class="btn primary" id="onboardingContinueBtn">Build my field kit</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="equipmentOverlay" class="panelOverlay">
+<dialog id="equipmentOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Preparing for the field</h2>
     <p class="promptDetail">Load what this project needs. A few items on the trailer do not belong on a controlled excavation. What you leave behind will matter later, but nothing you forget will block you permanently.</p>
@@ -151,16 +151,16 @@
       <button type="button" class="btn secondary" id="closeEquipmentBtn">Close</button>
     </div>
   </div>
-</div>
+</dialog>
 
-<div id="retrievalOverlay" class="panelOverlay">
+<dialog id="retrievalOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Missing from your kit</h2>
     <div id="retrievalOverlayBody"></div>
   </div>
-</div>
+</dialog>
 
-<div id="surveyOverlay" class="panelOverlay">
+<dialog id="surveyOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2 id="surveyItemName">Surface object</h2>
     <canvas id="surveyInspectCanvas" width="760" height="380"></canvas>
@@ -170,108 +170,108 @@
     <div id="surveyRecordSection"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeSurveyBtn">Back to the transect</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="surveySummaryOverlay" class="panelOverlay">
+<dialog id="surveySummaryOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Survey record and unit placement</h2>
     <div id="surveySummaryBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeSurveySummaryBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="unitChoiceOverlay" class="panelOverlay">
+<dialog id="unitChoiceOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Excavation units</h2>
     <div id="unitChoiceList"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeUnitChoiceBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="excavationOverlay" class="panelOverlay">
+<dialog id="excavationOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2 id="excavationTitle">Excavating</h2>
     <div id="excavationBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeExcavationBtn">Step away</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="featureOverlay" class="panelOverlay">
+<dialog id="featureOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2 id="featureTitle">Feature record</h2>
     <div id="featureBody"></div>
   </div>
-</div>
+</dialog>
 
-<div id="featureListOverlay" class="panelOverlay">
+<dialog id="featureListOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Feature records</h2>
     <div id="featureListBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeFeatureListBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="labOverlay" class="panelOverlay">
+<dialog id="labOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Field laboratory</h2>
     <p class="promptDetail">Only material you actually recovered is on these tables. Analysis can be revised at any time as other evidence changes what you think a context means.</p>
     <div id="labBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeLabBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="labItemOverlay" class="panelOverlay">
+<dialog id="labItemOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2 id="labItemTitle">Analysis</h2>
     <div id="labItemBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeLabItemBtn">Back to the laboratory</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="datingOverlay" class="panelOverlay">
+<dialog id="datingOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Dating the site</h2>
     <div id="datingBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeDatingBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="synthesisOverlay" class="panelOverlay">
+<dialog id="synthesisOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Reconstructing daily life</h2>
     <div id="synthesisBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeSynthesisBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="speculativeOverlay" class="panelOverlay">
+<dialog id="speculativeOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>This conclusion is not supported</h2>
     <div id="speculativeBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeSpeculativeBtn">Cancel</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="ethicsOverlay" class="panelOverlay">
+<dialog id="ethicsOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2 id="ethicsTitle">A professional decision</h2>
     <div id="ethicsBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeEthicsBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="ethicsLogOverlay" class="panelOverlay">
+<dialog id="ethicsLogOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Professional decisions</h2>
     <div id="ethicsLogBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeEthicsLogBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="evidenceOverlay" class="panelOverlay">
+<dialog id="evidenceOverlay" class="panelOverlay">
   <div class="panelCard wide">
     <h2>Evidence Room</h2>
-    <div id="evidenceTabs" class="tabRow" role="group" aria-label="Evidence Room sections"></div>
+    <div id="evidenceTabs" class="tabRow" role="tablist" aria-label="Evidence Room sections"></div>
     <div id="evidenceContent"></div>
     <div id="evidenceReadiness" role="status"></div>
     <div class="actionRow">
@@ -279,17 +279,17 @@
       <button type="button" class="btn secondary" id="closeEvidenceBtn">Close</button>
     </div>
   </div>
-</div>
+</dialog>
 
-<div id="reportOverlay" class="panelOverlay">
+<dialog id="reportOverlay" class="panelOverlay">
   <div class="panelCard wide">
     <h2>Tell the story of Redstone Bluff</h2>
     <div id="reportBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeReportBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="resultsOverlay" class="panelOverlay">
+<dialog id="resultsOverlay" class="panelOverlay">
   <div class="panelCard wide">
     <h2>Investigation report</h2>
     <div id="resultsBody"></div>
@@ -301,57 +301,57 @@
       <button type="button" class="btn secondary" id="closeResultsBtn">Close</button>
     </div>
   </div>
-</div>
+</dialog>
 
-<div id="copyFallbackOverlay" class="panelOverlay">
+<dialog id="copyFallbackOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Copy this text</h2>
     <p class="promptDetail">Your browser blocked direct clipboard access. Select all of the text below and copy it.</p>
     <textarea id="copyFallbackText" class="textInput" rows="14" readonly aria-label="Text to copy"></textarea>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeCopyFallbackBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="notebookOverlay" class="panelOverlay">
+<dialog id="notebookOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Field notebook</h2>
-    <div id="notebookTabs" class="tabRow" role="group" aria-label="Notebook sections"></div>
+    <div id="notebookTabs" class="tabRow" role="tablist" aria-label="Notebook sections"></div>
     <div id="notebookContent"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeNotebookBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="settingsOverlay" class="panelOverlay">
+<dialog id="settingsOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Settings</h2>
     <div id="settingsBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeSettingsBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="confirmOverlay" class="panelOverlay">
+<dialog id="confirmOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Are you sure?</h2>
     <div id="confirmBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeConfirmBtn">Cancel</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="helpOverlay" class="panelOverlay">
+<dialog id="helpOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Controls</h2>
     <div id="helpBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeHelpBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
-<div id="fallbackListOverlay" class="panelOverlay">
+<dialog id="fallbackListOverlay" class="panelOverlay">
   <div class="panelCard">
     <h2>Surface survey transect</h2>
     <div id="fallbackListBody"></div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeFallbackListBtn">Close</button></div>
   </div>
-</div>
+</dialog>
 
 <script type="module" src="src/main.js"></script>
 </body>

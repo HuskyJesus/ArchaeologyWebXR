@@ -14,7 +14,7 @@ import {
 } from '../../core/evidence.js';
 import * as modal from '../modal.js';
 import { toast } from '../toast.js';
-import { button, sectionHeading, emptyState, progressLine } from '../components.js';
+import { sectionHeading, emptyState, progressLine, tabStrip } from '../components.js';
 import { openReport } from './report.js';
 
 const PANEL = 'evidenceOverlay';
@@ -40,20 +40,13 @@ export function openEvidenceRoom(tab) {
   render();
 }
 
-function render() {
-  const tabHost = byId('evidenceTabs');
-  clear(tabHost);
-  TABS.forEach((tab) => {
-    const btn = el('button', {
-      type: 'button',
-      class: `tabBtn${tab.id === activeTab ? ' active' : ''}`,
-      'aria-pressed': String(tab.id === activeTab)
-    }, tab.label);
-    btn.addEventListener('click', () => { activeTab = tab.id; render(); });
-    tabHost.appendChild(btn);
-  });
-
+function render(focusTab = false) {
   const host = byId('evidenceContent');
+  tabStrip(byId('evidenceTabs'), host, TABS, activeTab, (id, viaKeyboard) => {
+    activeTab = id;
+    render(viaKeyboard);
+  }, focusTab);
+
   clear(host);
   (RENDERERS[activeTab] || (() => host.appendChild(emptyState('Nothing here yet.'))))(host);
 

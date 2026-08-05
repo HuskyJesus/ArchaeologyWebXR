@@ -5,6 +5,16 @@
    required decision, and the stack ordering that lets a panel open on top of
    another and return correctly.
 
+   Overlays are native <dialog> elements opened with showModal(), which gives
+   the browser-built modal semantics for free: the page behind the dialog is
+   genuinely inert (for the keyboard AND for screen-reader reading order, which
+   a scripted focus trap cannot fully achieve), stacking uses the top layer,
+   and assistive technology recognises the element as a modal dialog without
+   any ARIA. The scripted Tab/Escape handling below is kept as a fallback so
+   the manager still works on a plain element (used by the test fixtures), and
+   Escape on a native dialog is routed through close() so the dismissible flag
+   and the stack stay authoritative.
+
    Panels are also announced to the XR layer, which mirrors whichever panel
    is on top into a world-space surface so headset users get the same
    activities rather than an invisible HTML overlay. */
@@ -15,6 +25,19 @@ import { emit, EVENTS } from '../core/events.js';
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const stack = [];
+
+function isNativeDialog(el) {
+  return typeof el.showModal === 'function';
+}
+
+/* Escape on a native dialog fires a 'cancel' event. It is intercepted so a
+   non-dismissible dialog stays open, and a dismissible one closes through
+   close(), keeping the stack and the panelClosed event authoritative. */
+function onNativeCancel(event) {
+  event.preventDefault();
+  const entry = stack.find((m) => m.el === event.target);
+  if (entry && entry === stack[stack.length - 1] && entry.dismissible) close(entry.id);
+}
 
 function focusablesIn(el) {
   return qsa(FOCUSABLE, el).filter((n) => n.offsetParent !== null || n === document.activeElement);
@@ -64,8 +87,17 @@ export function open(options) {
 
   const previousFocus = document.activeElement;
   el.classList.add('open');
-  el.setAttribute('aria-modal', 'true');
-  if (!el.getAttribute('role')) el.setAttribute('role', 'dialog');
+  if (isNativeDialog(el)) {
+    if (!el.open) el.showModal();
+    if (!el.dataset.rbCancelWired) {
+      el.dataset.rbCancelWired = '1';
+      el.addEventListener('cancel', onNativeCancel);
+    }
+  } else {
+    // Plain-element fallback: recreate the dialog semantics by hand.
+    el.setAttribute('aria-modal', 'true');
+    if (!el.getAttribute('role')) el.setAttribute('role', 'dialog');
+  }
   if (!el.getAttribute('aria-labelledby')) {
     const headingEl = el.querySelector('h2, h3');
     if (headingEl) {
@@ -93,7 +125,11 @@ export function close(id) {
   if (idx === -1) return false;
   const entry = stack[idx];
   entry.el.classList.remove('open');
-  entry.el.removeAttribute('aria-modal');
+  if (isNativeDialog(entry.el)) {
+    if (entry.el.open) entry.el.close();
+  } else {
+    entry.el.removeAttribute('aria-modal');
+  }
   stack.splice(idx, 1);
   if (!stack.length) document.removeEventListener('keydown', onKeydown, true);
   if (entry.previousFocus && document.body.contains(entry.previousFocus) && typeof entry.previousFocus.focus === 'function') {

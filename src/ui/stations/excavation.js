@@ -190,7 +190,7 @@ function renderLevel() {
   host.appendChild(el('p', { class: 'promptLine' }, step.prompt));
   if (step.detail) host.appendChild(el('p', { class: 'promptDetail' }, step.detail));
 
-  const choices = el('div', { class: 'choiceStack', role: 'group', 'aria-label': step.prompt });
+  const choices = el('fieldset', { class: 'choiceStack choiceGroup' }, el('legend', { class: 'visuallyHidden' }, step.prompt));
   const feedback = el('div', { class: 'feedbackBox', role: 'status', 'aria-live': 'polite' });
 
   step.options.forEach((option) => {

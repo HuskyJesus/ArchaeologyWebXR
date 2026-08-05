@@ -60,13 +60,13 @@ function questionBlock(q, evidence) {
   wrap.appendChild(el('label', { class: 'fieldLabel', for: `report-claim-${q.id}` }, 'Conclusion'));
   wrap.appendChild(claim);
 
-  const evidenceLabelId = `report-evidence-label-${q.id}`;
-  wrap.appendChild(el('div', { class: 'fieldLabel', id: evidenceLabelId }, `Evidence cited (at least ${q.minEvidence})`));
   if (!evidence.length) {
+    wrap.appendChild(el('div', { class: 'fieldLabel' }, `Evidence cited (at least ${q.minEvidence})`));
     wrap.appendChild(emptyState('No citable evidence exists.'));
   } else {
     const chosen = new Set(stored.evidence || []);
-    const list = el('div', { class: 'evidencePicker', role: 'group', 'aria-labelledby': evidenceLabelId });
+    const list = el('fieldset', { class: 'evidencePicker choiceGroup' },
+      el('legend', { class: 'fieldLabel' }, `Evidence cited (at least ${q.minEvidence})`));
     evidence.forEach((e) => {
       const input = el('input', { type: 'checkbox', id: `report-${q.id}-${e.id}` });
       input.checked = chosen.has(e.id);

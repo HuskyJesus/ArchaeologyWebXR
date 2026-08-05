@@ -77,42 +77,6 @@ export function show(node, visible = true) {
   return node;
 }
 
-/* Buttons that behave as a mutually exclusive group, with aria-pressed kept
-   in sync. Returns a setter so the caller can change selection later. */
-export function radioGroup(container, options, onChange, initial = null) {
-  clear(container);
-  let current = initial;
-  const buttons = options.map((opt) => {
-    const btn = el('button', {
-      type: 'button',
-      class: 'choiceBtn' + (opt.id === current ? ' active' : ''),
-      'aria-pressed': String(opt.id === current)
-    }, opt.label);
-    btn.addEventListener('click', () => {
-      current = opt.id;
-      buttons.forEach((b) => {
-        const active = b === btn;
-        b.classList.toggle('active', active);
-        b.setAttribute('aria-pressed', String(active));
-      });
-      onChange(opt.id, opt);
-    });
-    container.appendChild(btn);
-    return btn;
-  });
-  return {
-    get value() { return current; },
-    set(id) {
-      current = id;
-      buttons.forEach((b, i) => {
-        const active = options[i].id === id;
-        b.classList.toggle('active', active);
-        b.setAttribute('aria-pressed', String(active));
-      });
-    }
-  };
-}
-
 export function pill(label, tone = 'warn') {
   return el('span', { class: `pill pill-${tone}` }, label);
 }
