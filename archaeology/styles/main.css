@@ -196,6 +196,9 @@ textarea.textInput { resize: vertical; min-height: 84px; }
 }
 .iconBtn.small { font-size: 0.74em; padding: 0 10px; }
 .iconBtn:hover { filter: brightness(1.15); }
+/* Links dressed as buttons (e.g. the exit-to-hub link in the HUD). */
+a.btn, a.iconBtn { text-decoration: none; }
+a.iconBtn { display: inline-flex; align-items: center; justify-content: center; }
 
 /* ---------- HUD ---------- */
 

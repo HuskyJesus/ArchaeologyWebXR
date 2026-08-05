@@ -218,6 +218,15 @@
   }
   .back-link:hover{color:var(--terracotta-dark);}
   .back-link:focus-visible{outline:3px solid var(--azulejo-blue-dark); outline-offset:2px; border-radius:4px;}
+
+  #hub-exit-link{
+    margin-top:3px;
+    color:var(--cream-dim); font-size:11.5px; font-weight:600;
+    text-decoration:underline; text-underline-offset:3px;
+    align-self:flex-start; padding:3px 0;
+  }
+  #hub-exit-link:hover{color:var(--azulejo-yellow);}
+  #hub-exit-link:focus-visible{outline:3px solid var(--cream); outline-offset:2px; border-radius:4px;}
 </style>
 </head>
 <body>
@@ -230,6 +239,7 @@
     <div id="title-block">
       <span class="eyebrow">La Casa Interactiva &middot; Photoreal</span>
       <h1>Learn Spanish, room by room</h1>
+      <a id="hub-exit-link" href="../">&larr; Back to UCF WebXR Experiences</a>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
       <div id="progress-wrap">
@@ -273,6 +283,7 @@
       <button class="primary-btn" id="download-csv-btn" style="margin-bottom:8px;">Download results (CSV)</button>
       <button class="primary-btn" id="copy-results-btn" style="background:var(--azulejo-blue);margin-bottom:8px;">Copy results summary</button>
       <button class="primary-btn" id="restart-btn" style="background:#8a7c6c;">Play again</button>
+      <a class="back-link" href="../" style="display:inline-block; margin:12px 0 0;">&larr; Back to UCF WebXR Experiences</a>
     </div>
   </div>
 
