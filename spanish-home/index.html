@@ -266,11 +266,13 @@
         <li><strong>Click an object</strong>, then choose its Spanish name from four options</li>
         <li>Get it right and you'll hear it spoken aloud</li>
       </ul>
-      <label for="student-name" style="display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--azulejo-blue);margin-bottom:6px;">Your name</label>
-      <input id="student-name" type="text" placeholder="e.g. Maria G." maxlength="60"
-        style="width:100%;padding:11px 12px;border:2px solid var(--azulejo-blue-dark);border-radius:10px;font-family:'Inter',sans-serif;font-size:14.5px;margin-bottom:12px;background:#fff;color:var(--charcoal);box-sizing:border-box;">
-      <button class="primary-btn" id="start-btn">Entrar a la casa</button>
-      <div id="name-warning" style="min-height:16px;font-size:12.5px;color:var(--bad-red);font-weight:600;margin-top:6px;"></div>
+      <form id="start-form">
+        <label for="student-name" style="display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--azulejo-blue);margin-bottom:6px;">Your name</label>
+        <input id="student-name" type="text" placeholder="e.g. Maria G." maxlength="60" required pattern=".*\S.*"
+          title="Please enter your name so your teacher can identify your results."
+          style="width:100%;padding:11px 12px;border:2px solid var(--azulejo-blue-dark);border-radius:10px;font-family:'Inter',sans-serif;font-size:14.5px;margin-bottom:12px;background:#fff;color:var(--charcoal);box-sizing:border-box;">
+        <button class="primary-btn" id="start-btn" type="submit">Entrar a la casa</button>
+      </form>
     </div>
   </div>
 
@@ -1740,15 +1742,11 @@
   /* ======================================================================
      INTRO / WIN OVERLAYS
      ====================================================================== */
-  document.getElementById('start-btn').addEventListener('click', function(){
-    var nameEl = document.getElementById('student-name');
-    var name = (nameEl.value || '').trim();
-    if(!name){
-      document.getElementById('name-warning').textContent = 'Please enter your name so your teacher can identify your results.';
-      nameEl.focus();
-      return;
-    }
-    session.studentName = name;
+  // the name field validates natively (required + pattern on the input), so the
+  // browser blocks an empty submit and explains why before this handler runs
+  document.getElementById('start-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    session.studentName = document.getElementById('student-name').value.trim();
     session.startTime = new Date();
     xapiAttempted();
     document.getElementById('intro-overlay').classList.remove('show');

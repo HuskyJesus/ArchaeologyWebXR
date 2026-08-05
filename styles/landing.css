@@ -191,6 +191,7 @@ button:focus-visible {
 .project-grid > li { display: flex; }
 
 .project-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -198,6 +199,15 @@ button:focus-visible {
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
+}
+
+/* Stretch the button's click target over the whole card (pure CSS, no
+   script): clicking anywhere on a card follows that card's link, while
+   the accessible name stays the button text. */
+.card-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {

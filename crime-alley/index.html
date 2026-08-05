@@ -4,6 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Case File: Marlowe Alley</title>
+<style>
+  /* Presentational behavior kept in CSS rather than script: the loading
+     spinner and the narrow-screen layout of the 3D chrome. The rules need
+     !important because the elements carry their base styles inline. */
+  @keyframes spinner-turn { to { transform: rotate(360deg); } }
+  #spinnerEl { animation: spinner-turn 1s linear infinite; }
+  @media (prefers-reduced-motion: reduce){
+    #spinnerEl { animation: none; opacity: 0.7; }
+  }
+  @media (max-width: 760px){
+    body[data-mode="3d"] #log { display: none !important; }
+    body[data-mode="3d"] #evidencePanel { width: auto !important; left: 8px !important; right: 8px !important; }
+    body[data-mode="3d"] #topbar { left: 8px !important; right: 8px !important; }
+    body[data-mode="3d"] #controls { left: 8px !important; right: 8px !important; }
+  }
+  /* Investigation-mode picker: native radio inputs, selection state in CSS.
+     Browsers without :has() still show the checked state via the radio dot. */
+  .mode-option {
+    display: block; width: 100%; margin-bottom: 8px; padding: 10px 12px;
+    border-radius: 4px; border: 1px solid #2a323f; background: #0d1117;
+    color: #e8ecf1; font-size: 13.5px; text-align: left; cursor: pointer;
+    box-sizing: border-box;
+  }
+  .mode-option:has(input:checked) { border-color: #e8b34a; background: rgba(232,179,74,0.15); }
+  .mode-option input { accent-color: #e8b34a; margin: 0 6px 0 0; }
+  .mode-option:focus-within { outline: 2px solid #4ad0ff; outline-offset: 2px; }
+</style>
 </head>
 <body data-mode="3d" style="margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#0a0d12; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#e8ecf1; box-sizing:border-box;">
 
@@ -11,21 +38,6 @@
   <div id="spinnerEl" style="width:34px; height:34px; border-radius:50%; border:3px solid #2a323f; border-top-color:#e8b34a; box-sizing:border-box;"></div>
   <span style="font-size:12px; color:#8a94a6; letter-spacing:.08em;">SECURING THE SCENE…</span>
 </div>
-<script>
-  // Spinner rotation runs independently of the main app so it animates even while
-  // the Three.js CDN script is still loading (or if it fails to load at all).
-  (function(){
-    var el = document.getElementById('spinnerEl');
-    var angle = 0;
-    function spin(){
-      angle = (angle + 6) % 360;
-      el.style.transform = 'rotate(' + angle + 'deg)';
-      requestAnimationFrame(spin);
-    }
-    spin();
-  })();
-</script>
-
 <div id="startScreen" style="position:fixed; inset:0; z-index:100; background:radial-gradient(ellipse at center, #161b22 0%, #05070a 100%); display:flex; align-items:center; justify-content:center; box-sizing:border-box;">
   <div id="startCard" style="width:min(460px,88vw); max-height:88vh; overflow-y:auto; padding:32px 28px; background:#12161d; border:1px solid #2a323f; border-radius:8px; text-align:center; box-sizing:border-box;">
     <div style="text-align:left; margin-bottom:14px;">
@@ -39,15 +51,17 @@
        part of good forensic work is knowing what to rule out.</p>
     <label for="nameInput" style="display:block; font-size:12.5px; color:#8a94a6; text-align:left; margin-bottom:6px;">Investigator name</label>
     <input id="nameInput" type="text" placeholder="e.g. Detective Alvarez" maxlength="40" style="width:100%; padding:10px 12px; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:14px; border-radius:4px; margin-bottom:18px; box-sizing:border-box;">
-    <div role="radiogroup" aria-label="Investigation mode" style="margin-bottom:18px; text-align:left;">
-      <div style="font-size:12.5px; color:#8a94a6; margin-bottom:8px;">Choose how you'd like to investigate:</div>
-      <button type="button" id="modeBtn3d" role="radio" aria-checked="true" style="display:block; width:100%; margin-bottom:8px; padding:10px 12px; border-radius:4px; border:1px solid #e8b34a; background:rgba(232,179,74,0.15); color:#e8ecf1; font-family:inherit; font-size:13.5px; text-align:left; cursor:pointer; box-sizing:border-box;">
+    <fieldset style="border:none; padding:0; margin:0 0 18px; text-align:left;">
+      <legend style="font-size:12.5px; color:#8a94a6; margin-bottom:8px; padding:0;">Choose how you'd like to investigate:</legend>
+      <label class="mode-option">
+        <input type="radio" name="investigation-mode" value="3d" checked>
         <strong>3D Investigation Scene</strong><br><span style="font-size:11.5px; color:#8a94a6;">Explore the alley in 3D. Works with mouse, touch, or keyboard (arrow keys to look around, [ / ] to move between evidence, Enter to inspect).</span>
-      </button>
-      <button type="button" id="modeBtnText" role="radio" aria-checked="false" style="display:block; width:100%; padding:10px 12px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:13.5px; text-align:left; cursor:pointer; box-sizing:border-box;">
+      </label>
+      <label class="mode-option">
+        <input type="radio" name="investigation-mode" value="text">
         <strong>Text-Based Case File</strong><br><span style="font-size:11.5px; color:#8a94a6;">The same investigation as a fully accessible list — no 3D scene, works with screen readers.</span>
-      </button>
-    </div>
+      </label>
+    </fieldset>
     <button id="startBtn" style="width:100%; padding:12px; background:#e8b34a; color:#1a1305; border:none; border-radius:4px; font-family:inherit; font-weight:bold; letter-spacing:.05em; font-size:14px; cursor:pointer; box-sizing:border-box;">BEGIN INVESTIGATION</button>
   </div>
 </div>
@@ -148,33 +162,6 @@
     <div id="copyStatus" style="font-size:11.5px; color:#5ad18a; margin-top:8px; height:14px;"></div>
   </div>
 </div>
-
-<script>
-  // Responsive layout adjustments (replaces @media max-width:760px, since styles are inline)
-  function applyResponsiveLayout(){
-    if(document.body.dataset.mode === 'text') return; // text mode manages its own layout
-    var narrow = window.innerWidth <= 760;
-    document.getElementById('log').style.display = narrow ? 'none' : 'block';
-    var panel = document.getElementById('evidencePanel');
-    if(narrow){
-      panel.style.width = 'auto';
-      panel.style.left = '8px';
-      panel.style.right = '8px';
-    } else {
-      panel.style.width = '300px';
-      panel.style.left = '';
-      panel.style.right = '16px';
-    }
-    var topbar = document.getElementById('topbar');
-    topbar.style.left = narrow ? '8px' : '16px';
-    topbar.style.right = narrow ? '8px' : '16px';
-    var controls = document.getElementById('controls');
-    controls.style.left = narrow ? '8px' : '16px';
-    controls.style.right = narrow ? '8px' : '16px';
-  }
-  applyResponsiveLayout();
-  window.addEventListener('resize', applyResponsiveLayout);
-</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -1421,20 +1408,6 @@ function handleTextListInput(e){
   }
 }
 
-function setInvestigationMode(mode){
-  investigationMode = mode;
-  document.body.dataset.mode = mode;
-  const b3d = document.getElementById('modeBtn3d'), btxt = document.getElementById('modeBtnText');
-  b3d.setAttribute('aria-checked', mode==='3d');
-  btxt.setAttribute('aria-checked', mode==='text');
-  b3d.style.borderColor = mode==='3d' ? COLORS.accent : COLORS.panelLine;
-  b3d.style.background = mode==='3d' ? 'rgba(232,179,74,0.15)' : '#0d1117';
-  btxt.style.borderColor = mode==='text' ? COLORS.accent : COLORS.panelLine;
-  btxt.style.background = mode==='text' ? 'rgba(232,179,74,0.15)' : '#0d1117';
-}
-document.getElementById('modeBtn3d').addEventListener('click', ()=>setInvestigationMode('3d'));
-document.getElementById('modeBtnText').addEventListener('click', ()=>setInvestigationMode('text'));
-
 refreshLog(); refreshProgress();
 document.getElementById('progressTotal').textContent = CLUES.length;
 
@@ -1584,6 +1557,9 @@ document.getElementById('btnCopySummary').addEventListener('click', async ()=>{
    START SCREEN
    ============================================================ */
 document.getElementById('startBtn').addEventListener('click', ()=>{
+  // the mode picker is a native radio group; read its state once at start
+  investigationMode = document.querySelector('input[name="investigation-mode"]:checked').value;
+  document.body.dataset.mode = investigationMode;
   telemetry.investigator = document.getElementById('nameInput').value.trim();
   telemetry.sessionStart = performance.now();
   document.getElementById('startScreen').style.display = 'none';

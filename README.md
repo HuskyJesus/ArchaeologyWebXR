@@ -16,9 +16,8 @@ WebXR is a progressive enhancement throughout. Every experience is fully usable 
 
 ```
 UCFWebXR/
-  index.html          Landing page
+  index.html          Landing page (plain HTML and CSS, no JavaScript)
   styles/landing.css  Landing page styles
-  src/landing.js      Landing page enhancement (navigation works without it)
   archaeology/        Redstone Bluff (modular: src/, styles/, tests/, vendor/, serve.py, docs)
   crime-alley/        Case File: Marlowe Alley (single-file experience)
   spanish-home/       La Casa Interactiva (single-file experience)
