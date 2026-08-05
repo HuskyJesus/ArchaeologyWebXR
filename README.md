@@ -10,7 +10,7 @@ WebXR is a progressive enhancement throughout. Every experience is fully usable 
 |---|---|---|
 | [Redstone Bluff Archaeological Investigation](./archaeology/) | `archaeology/` | Take the role of a field archaeologist investigating a prehistoric settlement threatened by erosion and development. Survey, excavate, analyze artifacts, make ethical decisions, and write an evidence-based report. Includes a full Guided Accessible Mode and automatic save and resume. |
 | [Case File: Marlowe Alley](./crime-alley/) | `crime-alley/` | Take the role of an investigating officer examining a nighttime alley crime scene. Classify evidence as relevant or not, explain your reasoning, and submit a case conclusion. Offers a 3D scene and an equivalent text-based case file mode. |
-| [La Casa Interactiva](./spanish-home/) | `spanish-home/` | Explore the rooms of a Spanish home and practice vocabulary by identifying furniture, appliances, and household objects in an interactive 3D experience with spoken pronunciation. |
+| [The Language House](./language-home/) | `language-home/` | Choose Spanish, French, German, Italian, Portuguese, Russian, or Japanese, then explore the rooms of a home and practice vocabulary by identifying furniture, appliances, and household objects in an interactive 3D experience with spoken pronunciation. |
 
 ## Folder structure
 
@@ -20,7 +20,7 @@ UCFWebXR/
   styles/landing.css  Landing page styles
   archaeology/        Redstone Bluff (modular: src/, styles/, tests/, vendor/, docs)
   crime-alley/        Case File: Marlowe Alley (single-file experience)
-  spanish-home/       La Casa Interactiva (single-file experience)
+  language-home/      The Language House (single-file experience)
   README.md
   .gitignore
 ```
@@ -43,9 +43,9 @@ Then open http://localhost:8000/ for the landing page, or go straight to a proje
 
 - http://localhost:8000/archaeology/
 - http://localhost:8000/crime-alley/
-- http://localhost:8000/spanish-home/
+- http://localhost:8000/language-home/
 
-Note: Crime Alley and the Spanish Home load Three.js from a CDN, and the Spanish Home loads Google Fonts, so those two need an internet connection. The archaeology project vendors its own copy of Three.js and runs fully offline.
+Note: Crime Alley and the Language House load Three.js from a CDN, and the Language House loads Google Fonts, so those two need an internet connection. The archaeology project vendors its own copy of Three.js and runs fully offline.
 
 ## Deploying to GitHub Pages
 
@@ -53,7 +53,7 @@ The site is built to work from a subdirectory (project pages). To deploy:
 
 1. Push to `main` on GitHub.
 2. In the repository settings, enable Pages with source "Deploy from a branch", branch `main`, folder `/ (root)`.
-3. The site is served at `https://<user>.github.io/UCFWebXR/`, with the projects at `.../UCFWebXR/archaeology/`, `.../UCFWebXR/crime-alley/`, and `.../UCFWebXR/spanish-home/`.
+3. The site is served at `https://<user>.github.io/UCFWebXR/`, with the projects at `.../UCFWebXR/archaeology/`, `.../UCFWebXR/crime-alley/`, and `.../UCFWebXR/language-home/`.
 
 All internal links are relative, so no base-path configuration is needed. WebXR and speech synthesis require the secure (https) origin that GitHub Pages provides.
 
@@ -65,7 +65,7 @@ Within the experiences:
 
 - **Archaeology** includes a complete Guided Accessible Mode that presents the entire investigation as headings, lists, and forms with full keyboard and screen-reader support, equivalent to the 3D mode. See [archaeology/ACCESSIBILITY.md](./archaeology/ACCESSIBILITY.md) for the full conformance documentation.
 - **Crime Alley** includes a text-based case file mode covering the same investigation as the 3D scene, plus keyboard controls and an optional narrated briefing in both modes.
-- **Spanish Home** supports keyboard room navigation (arrow keys or 1-4) and spoken vocabulary.
+- **The Language House** supports keyboard room navigation (arrow keys or 1-4) and spoken vocabulary in the chosen language.
 
 Each experience has a "Back to UCF WebXR Experiences" link on its start screen.
 

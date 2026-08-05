@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="La Casa Interactiva: explore the rooms of a Spanish home and practice vocabulary by identifying furniture, appliances, and household objects in 3D.">
-<title>La Casa Interactiva - Learn Spanish, Room by Room</title>
+<meta name="description" content="The Language House: choose Spanish, French, German, Italian, Portuguese, Russian, or Japanese, then explore the rooms of a home and practice vocabulary by identifying furniture, appliances, and household objects in 3D.">
+<title>The Language House - Learn a Language, Room by Room</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -227,6 +227,26 @@
   }
   #hub-exit-link:hover{color:var(--azulejo-yellow);}
   #hub-exit-link:focus-visible{outline:3px solid var(--cream); outline-offset:2px; border-radius:4px;}
+
+  /* ---------- language picker (native radios, selection state in CSS) ---------- */
+  .lang-fieldset{border:none; padding:0; margin:0 0 14px;}
+  .lang-fieldset legend{
+    font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--azulejo-blue); margin-bottom:6px; padding:0;
+  }
+  .lang-grid{display:grid; grid-template-columns:1fr 1fr; gap:7px;}
+  .lang-option{
+    display:flex; align-items:center; gap:7px; padding:8px 10px;
+    border:2px solid var(--azulejo-blue-dark); border-radius:10px; background:#fff;
+    font-size:13px; font-weight:600; color:var(--charcoal); cursor:pointer;
+  }
+  .lang-option:has(input:checked){background:var(--azulejo-blue); color:#fff;}
+  .lang-option:has(input:checked) .lang-native{color:var(--cream-dim);}
+  .lang-option input{accent-color:var(--terracotta); margin:0; flex:none;}
+  .lang-option .lang-native{font-size:11px; font-weight:500; color:#8a7c6c; margin-left:auto;}
+  .lang-option:focus-within{outline:3px solid var(--azulejo-blue-dark); outline-offset:2px;}
+
+  .room-tab .rt-native{font-size:10px; font-style:italic; opacity:.9;}
 </style>
 </head>
 <body>
@@ -237,8 +257,8 @@
 
   <div id="hud">
     <div id="title-block">
-      <span class="eyebrow">La Casa Interactiva &middot; Photoreal</span>
-      <h1>Learn Spanish, room by room</h1>
+      <span class="eyebrow">The Language House &middot; Photoreal</span>
+      <h1>Learn a language, room by room</h1>
       <a id="hub-exit-link" href="../">&larr; Back to UCF WebXR Experiences</a>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
@@ -257,29 +277,41 @@
   <div id="intro-overlay">
     <div class="card">
       <a class="back-link" href="../">&larr; Back to UCF WebXR Experiences</a>
-      <span class="eyebrow" style="display:block;">Bienvenido</span>
-      <h2>Welcome to your Spanish house</h2>
-      <p>Explore four rooms of a Spanish home. Every piece of furniture and every appliance is waiting to be named.</p>
+      <span class="eyebrow" style="display:block;">Welcome</span>
+      <h2>Welcome to the Language House</h2>
+      <p>Pick a language, then explore four rooms of a home. Every piece of furniture and every appliance is waiting to be named in your chosen language.</p>
       <ul>
         <li><strong>Drag</strong> (or swipe) to look around a room</li>
         <li><strong>Scroll / pinch</strong> to zoom</li>
-        <li><strong>Click an object</strong>, then choose its Spanish name from four options</li>
+        <li><strong>Click an object</strong>, then choose its name from four options</li>
         <li>Get it right and you'll hear it spoken aloud</li>
       </ul>
       <form id="start-form">
+        <fieldset class="lang-fieldset">
+          <legend>Language to learn</legend>
+          <div class="lang-grid">
+            <label class="lang-option"><input type="radio" name="learn-language" value="es" required> Spanish <span class="lang-native">espa&ntilde;ol</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="fr"> French <span class="lang-native">fran&ccedil;ais</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="de"> German <span class="lang-native">Deutsch</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="it"> Italian <span class="lang-native">italiano</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="pt"> Portuguese <span class="lang-native">portugu&ecirc;s</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="ru"> Russian <span class="lang-native">&#1088;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</span></label>
+            <label class="lang-option"><input type="radio" name="learn-language" value="ja"> Japanese <span class="lang-native">&#26085;&#26412;&#35486;</span></label>
+          </div>
+        </fieldset>
         <label for="student-name" style="display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--azulejo-blue);margin-bottom:6px;">Your name</label>
         <input id="student-name" type="text" placeholder="e.g. Maria G." maxlength="60" required pattern=".*\S.*"
           title="Please enter your name so your teacher can identify your results."
           style="width:100%;padding:11px 12px;border:2px solid var(--azulejo-blue-dark);border-radius:10px;font-family:'Inter',sans-serif;font-size:14.5px;margin-bottom:12px;background:#fff;color:var(--charcoal);box-sizing:border-box;">
-        <button class="primary-btn" id="start-btn" type="submit">Entrar a la casa</button>
+        <button class="primary-btn" id="start-btn" type="submit">Enter the house</button>
       </form>
     </div>
   </div>
 
   <div id="win-overlay">
     <div class="card">
-      <span class="eyebrow">&iexcl;Enhorabuena!</span>
-      <h2>You've furnished your Spanish vocabulary</h2>
+      <span class="eyebrow">Congratulations</span>
+      <h2>You've furnished your vocabulary</h2>
       <p id="win-summary">All 32 items across the kitchen, living room, bedroom, and bathroom are learned. Well done!</p>
       <div id="results-box" style="background:#fff;border:2px solid var(--azulejo-blue-dark);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:12px;white-space:pre-wrap;margin-bottom:12px;max-height:120px;overflow:auto;"></div>
       <button class="primary-btn" id="download-csv-btn" style="margin-bottom:8px;">Download results (CSV)</button>
@@ -375,9 +407,111 @@
     { room:'bathroom', id:'lavadora',    en:'washing machine', es:'la lavadora',   type:'washer',     x:-2.2, z: 4.25, ry:3.14159 }
   ];
 
-  var ALL_ES_WORDS = ITEM_DEFS.map(function(d){ return d.es; });
-  var ES_TO_EN = {};
-  ITEM_DEFS.forEach(function(d){ ES_TO_EN[d.es] = d.en; });
+  /* ======================================================================
+     LANGUAGES
+     The experience starts with a language choice. ITEM_DEFS carries the
+     original Spanish; TRANSLATIONS carries every other language, keyed by
+     item id. All quiz text, feedback and speech follow the chosen language.
+     ====================================================================== */
+  var LANGS = {
+    es: { label:'Spanish', native:'español', speech:'es-ES', title:'Learn Spanish, room by room',
+      eyebrow:'¿Cómo se dice...?',
+      question:function(en){ return '‘'+en+'’ en español?'; },
+      correct:function(en,w){ return '¡Correcto! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'No — ‘'+w+'’ significa ‘'+en+'’. Inténtalo otra vez.'; },
+      learned:function(en,w){ return '¡Ya aprendiste esta palabra! ‘'+en+'’ = '+w+'. Toca el botón para escucharla otra vez.'; },
+      rooms:{kitchen:'la cocina', living:'la sala', bedroom:'el dormitorio', bathroom:'el baño'} },
+    fr: { label:'French', native:'français', speech:'fr-FR', title:'Learn French, room by room',
+      eyebrow:'Comment dit-on... ?',
+      question:function(en){ return '‘'+en+'’ en français ?'; },
+      correct:function(en,w){ return 'Correct ! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'Non — ‘'+w+'’ signifie ‘'+en+'’. Réessaie.'; },
+      learned:function(en,w){ return 'Tu as déjà appris ce mot ! ‘'+en+'’ = '+w+'. Appuie sur le bouton pour l’écouter encore.'; },
+      rooms:{kitchen:'la cuisine', living:'le salon', bedroom:'la chambre', bathroom:'la salle de bains'} },
+    de: { label:'German', native:'Deutsch', speech:'de-DE', title:'Learn German, room by room',
+      eyebrow:'Wie sagt man...?',
+      question:function(en){ return '‘'+en+'’ auf Deutsch?'; },
+      correct:function(en,w){ return 'Richtig! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'Nein — ‘'+w+'’ bedeutet ‘'+en+'’. Versuch es noch einmal.'; },
+      learned:function(en,w){ return 'Dieses Wort kennst du schon! ‘'+en+'’ = '+w+'. Tippe auf die Taste, um es noch einmal zu hören.'; },
+      rooms:{kitchen:'die Küche', living:'das Wohnzimmer', bedroom:'das Schlafzimmer', bathroom:'das Badezimmer'} },
+    it: { label:'Italian', native:'italiano', speech:'it-IT', title:'Learn Italian, room by room',
+      eyebrow:'Come si dice...?',
+      question:function(en){ return '‘'+en+'’ in italiano?'; },
+      correct:function(en,w){ return 'Corretto! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'No — ‘'+w+'’ significa ‘'+en+'’. Riprova.'; },
+      learned:function(en,w){ return 'Hai già imparato questa parola! ‘'+en+'’ = '+w+'. Tocca il pulsante per riascoltarla.'; },
+      rooms:{kitchen:'la cucina', living:'il soggiorno', bedroom:'la camera da letto', bathroom:'il bagno'} },
+    pt: { label:'Portuguese', native:'português', speech:'pt-BR', title:'Learn Portuguese, room by room',
+      eyebrow:'Como se diz...?',
+      question:function(en){ return '‘'+en+'’ em português?'; },
+      correct:function(en,w){ return 'Correto! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'Não — ‘'+w+'’ significa ‘'+en+'’. Tente de novo.'; },
+      learned:function(en,w){ return 'Você já aprendeu esta palavra! ‘'+en+'’ = '+w+'. Toque no botão para ouvir de novo.'; },
+      rooms:{kitchen:'a cozinha', living:'a sala', bedroom:'o quarto', bathroom:'o banheiro'} },
+    ru: { label:'Russian', native:'русский', speech:'ru-RU', title:'Learn Russian, room by room',
+      eyebrow:'Как сказать...?',
+      question:function(en){ return '‘'+en+'’ по-русски?'; },
+      correct:function(en,w){ return 'Правильно! ‘'+en+'’ = '+w+'.'; },
+      wrong:function(w,en){ return 'Нет — ‘'+w+'’ означает ‘'+en+'’. Попробуй ещё раз.'; },
+      learned:function(en,w){ return 'Ты уже знаешь это слово! ‘'+en+'’ = '+w+'. Нажми кнопку, чтобы послушать ещё раз.'; },
+      rooms:{kitchen:'кухня', living:'гостиная', bedroom:'спальня', bathroom:'ванная'} },
+    ja: { label:'Japanese', native:'日本語', speech:'ja-JP', title:'Learn Japanese, room by room',
+      eyebrow:'何と言いますか。',
+      question:function(en){ return '‘'+en+'’は日本語で?'; },
+      correct:function(en,w){ return '正解！ ‘'+en+'’ = '+w+'。'; },
+      wrong:function(w,en){ return '違います。「'+w+'」は ‘'+en+'’ という意味です。もう一度。'; },
+      learned:function(en,w){ return 'この単語はもう覚えました！ ‘'+en+'’ = '+w+'。ボタンを押すともう一度聞けます。'; },
+      rooms:{kitchen:'キッチン', living:'リビング', bedroom:'寝室', bathroom:'バスルーム'} }
+  };
+
+  var TRANSLATIONS = {
+    refrigerador:{ fr:'le réfrigérateur', de:'der Kühlschrank', it:'il frigorifero', pt:'a geladeira', ru:'холодильник', ja:'冷蔵庫' },
+    estufa:      { fr:'la cuisinière',    de:'der Herd',        it:'il fornello',    pt:'o fogão',     ru:'плита',       ja:'コンロ' },
+    fregadero:   { fr:'l’évier',     de:'die Spüle',       it:'il lavello',     pt:'a pia',       ru:'раковина',    ja:'流し' },
+    microondas:  { fr:'le micro-ondes',   de:'die Mikrowelle',  it:'il microonde',   pt:'o micro-ondas', ru:'микроволновка', ja:'電子レンジ' },
+    mesa:        { fr:'la table',         de:'der Tisch',       it:'il tavolo',      pt:'a mesa',      ru:'стол',        ja:'テーブル' },
+    silla:       { fr:'la chaise',        de:'der Stuhl',       it:'la sedia',       pt:'a cadeira',   ru:'стул',        ja:'いす' },
+    alacena:     { fr:'le buffet',        de:'der Küchenschrank', it:'la credenza',  pt:'o armário',   ru:'буфет',       ja:'食器棚' },
+    cafetera:    { fr:'la cafetière',     de:'die Kaffeemaschine', it:'la caffettiera', pt:'a cafeteira', ru:'кофеварка', ja:'コーヒーメーカー' },
+    sofa:        { fr:'le canapé',        de:'das Sofa',        it:'il divano',      pt:'o sofá',      ru:'диван',       ja:'ソファ' },
+    televisor:   { fr:'la télévision',    de:'der Fernseher',   it:'il televisore',  pt:'a televisão', ru:'телевизор',   ja:'テレビ' },
+    mesita:      { fr:'la table basse',   de:'der Couchtisch',  it:'il tavolino',    pt:'a mesa de centro', ru:'журнальный столик', ja:'ローテーブル' },
+    lampara:     { fr:'la lampe',         de:'die Lampe',       it:'la lampada',     pt:'a luminária', ru:'лампа',       ja:'ランプ' },
+    estanteria:  { fr:'l’étagère',   de:'das Bücherregal', it:'la libreria',    pt:'a estante',   ru:'книжный шкаф', ja:'本棚' },
+    alfombra:    { fr:'le tapis',         de:'der Teppich',     it:'il tappeto',     pt:'o tapete',    ru:'ковёр',       ja:'カーペット' },
+    sillon:      { fr:'le fauteuil',      de:'der Sessel',      it:'la poltrona',    pt:'a poltrona',  ru:'кресло',      ja:'アームチェア' },
+    planta:      { fr:'la plante',        de:'die Pflanze',     it:'la pianta',      pt:'a planta',    ru:'растение',    ja:'植物' },
+    cama:        { fr:'le lit',           de:'das Bett',        it:'il letto',       pt:'a cama',      ru:'кровать',     ja:'ベッド' },
+    'clóset':    { fr:'l’armoire',   de:'der Kleiderschrank', it:'l’armadio', pt:'o guarda-roupa', ru:'шкаф',  ja:'クローゼット' },
+    'cómoda':    { fr:'la commode',       de:'die Kommode',     it:'il comò',        pt:'a cômoda',    ru:'комод',       ja:'たんす' },
+    espejo:      { fr:'le miroir',        de:'der Spiegel',     it:'lo specchio',    pt:'o espelho',   ru:'зеркало',     ja:'鏡' },
+    mesita_noche:{ fr:'la table de nuit', de:'der Nachttisch',  it:'il comodino',    pt:'o criado-mudo', ru:'тумбочка',  ja:'ナイトテーブル' },
+    almohada:    { fr:'l’oreiller',  de:'das Kissen',      it:'il cuscino',     pt:'o travesseiro', ru:'подушка',   ja:'まくら' },
+    manta:       { fr:'la couverture',    de:'die Decke',       it:'la coperta',     pt:'o cobertor',  ru:'одеяло',      ja:'毛布' },
+    despertador: { fr:'le réveil',        de:'der Wecker',      it:'la sveglia',     pt:'o despertador', ru:'будильник', ja:'目覚まし時計' },
+    inodoro:     { fr:'les toilettes',    de:'die Toilette',    it:'il gabinetto',   pt:'o vaso sanitário', ru:'унитаз', ja:'トイレ' },
+    papel:       { fr:'le papier toilette', de:'das Toilettenpapier', it:'la carta igienica', pt:'o papel higiênico', ru:'туалетная бумага', ja:'トイレットペーパー' },
+    lavabo:      { fr:'le lavabo',        de:'das Waschbecken', it:'il lavandino',   pt:'o lavatório', ru:'умывальник',  ja:'洗面台' },
+    toalla:      { fr:'la serviette',     de:'das Handtuch',    it:'l’asciugamano', pt:'a toalha', ru:'полотенце',  ja:'タオル' },
+    banera:      { fr:'la baignoire',     de:'die Badewanne',   it:'la vasca da bagno', pt:'a banheira', ru:'ванна',     ja:'浴槽' },
+    ducha:       { fr:'la douche',        de:'die Dusche',      it:'la doccia',      pt:'o chuveiro',  ru:'душ',         ja:'シャワー' },
+    cortina:     { fr:'le rideau de douche', de:'der Duschvorhang', it:'la tenda della doccia', pt:'a cortina do chuveiro', ru:'шторка для душа', ja:'シャワーカーテン' },
+    lavadora:    { fr:'la machine à laver', de:'die Waschmaschine', it:'la lavatrice', pt:'a máquina de lavar', ru:'стиральная машина', ja:'洗濯機' }
+  };
+
+  var LANG = null;
+  function wordFor(def){
+    return LANG.code === 'es' ? def.es : TRANSLATIONS[def.id][LANG.code];
+  }
+  var ALL_WORDS = [], WORD_TO_EN = {};
+  function applyLanguage(code){
+    LANG = LANGS[code];
+    LANG.code = code;
+    ALL_WORDS = ITEM_DEFS.map(wordFor);
+    WORD_TO_EN = {};
+    ITEM_DEFS.forEach(function(d){ WORD_TO_EN[wordFor(d)] = d.en; });
+  }
 
   /* ======================================================================
      THREE.JS SETUP
@@ -1376,7 +1510,7 @@
   ROOM_DEFS.forEach(function(r, idx){
     var btn = document.createElement('button');
     btn.className = 'room-tab';
-    btn.innerHTML = '<span class="rt-name">'+r.name+'</span><span class="rt-count" data-room="'+r.id+'"></span>';
+    btn.innerHTML = '<span class="rt-name">'+r.name+'</span><span class="rt-native"></span><span class="rt-count" data-room="'+r.id+'"></span>';
     btn.addEventListener('click', function(){ setRoom(idx, false); });
     tabsEl.appendChild(btn);
   });
@@ -1467,49 +1601,47 @@
     return a;
   }
 
-  /* ---------------- Spanish speech synthesis ----------------
-     Speaks the full phrase INCLUDING the article (el/la) since the article
-     carries the noun's gender — an essential part of learning the word.
-     Voices load asynchronously in most browsers, so we pick and cache the
-     best Spanish voice whenever the list (re)loads. */
-  var cachedEsVoice = null;
+  /* ---------------- speech synthesis in the chosen language ----------------
+     Speaks the full phrase INCLUDING the article (el/la, le/la, der/die/das...)
+     since the article carries the noun's gender — an essential part of
+     learning the word. Voices load asynchronously in most browsers, so we
+     pick and cache the best voice for the chosen language whenever the list
+     (re)loads. */
+  var cachedVoice = null;
 
-  function scoreSpanishVoice(v){
-    if(!v.lang || v.lang.toLowerCase().indexOf('es') !== 0) return -1;
+  function scoreVoice(v){
+    if(!LANG || !v.lang) return -1;
+    var want = LANG.speech.toLowerCase();
+    var lang = v.lang.toLowerCase().replace('_','-');
+    if(lang.indexOf(want.slice(0,2)) !== 0) return -1;   // wrong language entirely
     var s = 1;
-    var lang = v.lang.toLowerCase(), name = (v.name||'').toLowerCase();
-    if(lang === 'es-es') s += 3;                       // Castilian first
-    else if(lang === 'es-mx' || lang === 'es-us') s += 2;
-    if(name.indexOf('google') !== -1) s += 2;          // typically higher quality
-    if(name.indexOf('monica') !== -1 || name.indexOf('mónica') !== -1 ||
-       name.indexOf('paulina') !== -1 || name.indexOf('helena') !== -1 ||
-       name.indexOf('elvira') !== -1 || name.indexOf('jorge') !== -1) s += 2;  // known natural voices
-    if(v.localService) s += 1;                          // avoids network TTS latency
+    if(lang === want) s += 3;                            // preferred regional variant
+    if((v.name||'').toLowerCase().indexOf('google') !== -1) s += 2;  // typically higher quality
+    if(v.localService) s += 1;                           // avoids network TTS latency
     return s;
   }
 
-  function pickSpanishVoice(){
+  function pickVoice(){
+    if(!('speechSynthesis' in window)) return;
     var voices = window.speechSynthesis.getVoices();
     var best = null, bestScore = -1;
     voices.forEach(function(v){
-      var s = scoreSpanishVoice(v);
+      var s = scoreVoice(v);
       if(s > bestScore){ bestScore = s; best = v; }
     });
-    cachedEsVoice = best;
+    cachedVoice = best;
   }
 
   if('speechSynthesis' in window){
-    pickSpanishVoice();
-    window.speechSynthesis.addEventListener('voiceschanged', pickSpanishVoice);
+    window.speechSynthesis.addEventListener('voiceschanged', pickVoice);
   }
 
-  function speakSpanish(text){
-    if(!('speechSynthesis' in window)) return;
-    if(!cachedEsVoice) pickSpanishVoice();
-    // speak the complete phrase, article included: "el refrigerador", "la mesita de noche"
+  function speakWord(text){
+    if(!('speechSynthesis' in window) || !LANG) return;
+    if(!cachedVoice) pickVoice();
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = (cachedEsVoice && cachedEsVoice.lang) || 'es-ES';
-    if(cachedEsVoice) u.voice = cachedEsVoice;
+    u.lang = (cachedVoice && cachedVoice.lang) || LANG.speech;
+    if(cachedVoice) u.voice = cachedVoice;
     u.rate = 0.85;    // slightly slow for learners
     u.pitch = 1.0;
     u.volume = 1.0;
@@ -1525,7 +1657,8 @@
     optionsEl.innerHTML = '';
     feedbackEl.textContent = '';
     feedbackEl.className = '';
-    questionEl.textContent = '\u2018' + st.def.en + '\u2019 en espa\u00f1ol?';
+    var target = wordFor(st.def);
+    questionEl.textContent = LANG.question(st.def.en);
 
     if(st.solved){
       // review mode: already-learned items can be revisited to hear the word again
@@ -1533,16 +1666,16 @@
       var replayBtn = document.createElement('button');
       replayBtn.className = 'opt-btn correct';
       replayBtn.style.gridColumn = '1 / -1';
-      replayBtn.textContent = '\ud83d\udd0a ' + st.def.es;
-      replayBtn.addEventListener('click', function(){ speakSpanish(st.def.es); });
+      replayBtn.textContent = '\ud83d\udd0a ' + target;
+      replayBtn.addEventListener('click', function(){ speakWord(target); });
       optionsEl.appendChild(replayBtn);
-      feedbackEl.textContent = '\u00a1Ya aprendiste esta palabra! \u2018' + st.def.en + '\u2019 = ' + st.def.es + '. Toca el bot\u00f3n para escucharla otra vez.';
+      feedbackEl.textContent = LANG.learned(st.def.en, target);
       feedbackEl.className = 'ok';
-      speakSpanish(st.def.es);
+      speakWord(target);
     } else {
       setHighlight(id, 'active');
-      var distractors = shuffle(ALL_ES_WORDS.filter(function(w){ return w !== st.def.es; })).slice(0,3);
-      var options = shuffle([st.def.es].concat(distractors));
+      var distractors = shuffle(ALL_WORDS.filter(function(w){ return w !== target; })).slice(0,3);
+      var options = shuffle([target].concat(distractors));
       options.forEach(function(opt){
         var b = document.createElement('button');
         b.className = 'opt-btn';
@@ -1655,8 +1788,8 @@
       objectType:'Activity',
       id: XAPI_CONFIG.activityBase + '/items/' + encodeURIComponent(def.id),
       definition:{
-        name:{'en-US': def.en + ' / ' + def.es},
-        description:{'en-US':'Select the Spanish word for "' + def.en + '" (' + def.room + ')'},
+        name:{'en-US': def.en + ' / ' + wordFor(def)},
+        description:{'en-US':'Select the ' + LANG.label + ' word for "' + def.en + '" (' + def.room + ')'},
         type:'http://adlnet.gov/expapi/activities/question',
         interactionType:'choice'
       }
@@ -1704,15 +1837,16 @@
 
   function handleAnswer(opt, btnEl){
     var st = itemState[activeItemId];
-    if(opt === st.def.es){
+    var target = wordFor(st.def);
+    if(opt === target){
       recordAttempt(activeItemId, true);
       xapiAnswered(st.def, true, opt);
       btnEl.classList.add('correct');
-      feedbackEl.textContent = '\u00a1Correcto! \u2018' + st.def.en + '\u2019 = ' + st.def.es + '.';
+      feedbackEl.textContent = LANG.correct(st.def.en, target);
       feedbackEl.className = 'ok';
       st.solved = true;
       setHighlight(activeItemId, 'solved');
-      speakSpanish(st.def.es);
+      speakWord(target);
       updateProgress();
       Array.prototype.forEach.call(optionsEl.children, function(b){ b.disabled = true; });
       setTimeout(closeQuiz, 1100);
@@ -1722,9 +1856,9 @@
       btnEl.classList.add('wrong');
       // say the word they actually chose, and explain what it really means,
       // so wrong answers still build vocabulary instead of dead-ending
-      feedbackEl.textContent = 'No \u2014 \u2018' + opt + '\u2019 significa \u2018' + (ES_TO_EN[opt] || opt) + '\u2019. Int\u00e9ntalo otra vez.';
+      feedbackEl.textContent = LANG.wrong(opt, WORD_TO_EN[opt] || opt);
       feedbackEl.className = 'bad';
-      speakSpanish(opt);
+      speakWord(opt);
       cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake');
       setHighlight(activeItemId, 'wrong');
       setTimeout(function(){ setHighlight(activeItemId, 'active'); }, 300);
@@ -1746,6 +1880,15 @@
   // browser blocks an empty submit and explains why before this handler runs
   document.getElementById('start-form').addEventListener('submit', function(e){
     e.preventDefault();
+    // the language radios are required, so a choice is guaranteed here
+    applyLanguage(document.querySelector('input[name="learn-language"]:checked').value);
+    pickVoice();
+    document.getElementById('quiz-eyebrow').textContent = LANG.eyebrow;
+    document.querySelector('#title-block h1').textContent = LANG.title;
+    document.title = 'The Language House - ' + LANG.title;
+    // teach the room names too: show them under the English tab labels
+    var natives = document.querySelectorAll('.room-tab .rt-native');
+    ROOM_DEFS.forEach(function(r, i){ if(natives[i]) natives[i].textContent = LANG.rooms[r.id]; });
     session.studentName = document.getElementById('student-name').value.trim();
     session.startTime = new Date();
     xapiAttempted();
@@ -1767,10 +1910,11 @@
       var a = session.attempts[d.id] || { wrong:0, firstTry:false, answeredAt:'' };
       if(a.firstTry) firstTryCount++;
       totalWrong += a.wrong;
-      rows.push({ room:d.room, en:d.en, es:d.es, wrongAttempts:a.wrong, firstTry:a.firstTry ? 'yes':'no', answeredAt:a.answeredAt || '' });
+      rows.push({ room:d.room, en:d.en, word:wordFor(d), wrongAttempts:a.wrong, firstTry:a.firstTry ? 'yes':'no', answeredAt:a.answeredAt || '' });
     });
     return {
       name: session.studentName,
+      language: LANG.label,
       date: session.endTime.toISOString(),
       durationSeconds: durSec,
       totalItems: ITEM_DEFS.length,
@@ -1784,20 +1928,21 @@
   function resultsToCSV(res){
     function esc(v){ v = String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
     var lines = [];
-    lines.push(['student','date','duration_seconds','score_percent','first_try_correct','total_items','total_wrong_attempts'].join(','));
-    lines.push([res.name,res.date,res.durationSeconds,res.scorePercent,res.firstTryCorrect,res.totalItems,res.totalWrongAttempts].map(esc).join(','));
+    lines.push(['student','language','date','duration_seconds','score_percent','first_try_correct','total_items','total_wrong_attempts'].join(','));
+    lines.push([res.name,res.language,res.date,res.durationSeconds,res.scorePercent,res.firstTryCorrect,res.totalItems,res.totalWrongAttempts].map(esc).join(','));
     lines.push('');
-    lines.push(['room','english','spanish','wrong_attempts','first_try','answered_at'].join(','));
+    lines.push(['room','english','word','wrong_attempts','first_try','answered_at'].join(','));
     res.rows.forEach(function(r){
-      lines.push([r.room,r.en,r.es,r.wrongAttempts,r.firstTry,r.answeredAt].map(esc).join(','));
+      lines.push([r.room,r.en,r.word,r.wrongAttempts,r.firstTry,r.answeredAt].map(esc).join(','));
     });
     return lines.join('\n');
   }
 
   function resultsSummaryText(res){
     var m = Math.floor(res.durationSeconds/60), s = res.durationSeconds%60;
-    return 'La Casa Interactiva results\n' +
+    return 'The Language House results\n' +
       'Student: ' + res.name + '\n' +
+      'Language: ' + res.language + '\n' +
       'Date: ' + res.date + '\n' +
       'Score: ' + res.scorePercent + '% (' + res.firstTryCorrect + '/' + res.totalItems + ' first try)\n' +
       'Wrong attempts: ' + res.totalWrongAttempts + '\n' +
