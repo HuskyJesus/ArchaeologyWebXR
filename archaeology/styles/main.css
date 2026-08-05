@@ -126,6 +126,16 @@ canvas#sceneCanvas { display: block; touch-action: none; }
   max-width: 640px; width: 100%;
 }
 .gateCard h1 { font-size: 1.5rem; margin: 0 0 12px; }
+.hubLink {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 0;
+  color: var(--info);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hubLink:hover { color: var(--text); }
 .gateCard p { color: var(--text-dim); }
 .gateFooter { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 .resumeCard {

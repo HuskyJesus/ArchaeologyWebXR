@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Redstone Bluff Archaeological Investigation: an inquiry-driven field archaeology simulation for desktop, mobile and WebXR.">
+<title>Redstone Bluff Archaeological Investigation</title>
+<link rel="stylesheet" href="styles/main.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="loading" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <h1>Redstone Bluff</h1>
+  <p>Preparing the site record</p>
+</div>
+
+<a class="skipLink" href="#startGate">Skip to the start of the investigation</a>
+
+<!-- Start gate -->
+<div id="startGate" class="gate" role="region" aria-labelledby="gateHeading">
+  <div class="gateCard">
+    <a class="hubLink" href="../">&larr; Back to UCF WebXR Experiences</a>
+    <h1 id="gateHeading">Redstone Bluff Archaeological Investigation</h1>
+    <p>Erosion along the Redstone River has exposed artifacts in the bluff face. A highway expansion gives your team three weeks to investigate before construction begins. You are the field archaeologist.</p>
+
+    <div id="resumeCard" class="resumeCard" style="display:none;">
+      <h2>Resume your investigation</h2>
+      <div id="resumeDetail"></div>
+      <button type="button" class="btn primary" id="resumeBtn">Resume investigation</button>
+    </div>
+
+    <label class="fieldLabel" for="studentName">Your name</label>
+    <input type="text" id="studentName" maxlength="60" autocomplete="name" placeholder="Enter your name">
+
+    <fieldset class="modeChoice">
+      <legend>Choose how to explore</legend>
+      <div class="actionRow">
+        <button type="button" class="btn primary" id="startBtn">Explore in 3D</button>
+        <button type="button" class="btn primary" id="gateFallbackBtn">Use Guided Accessible Mode</button>
+      </div>
+      <p class="subtle">Guided Accessible Mode presents the whole investigation as headings, lists and forms with full keyboard and screen-reader support and no 3D graphics. Both modes cover exactly the same activities, decisions, evidence and final report. You can switch between them at any time from Settings without losing progress.</p>
+    </fieldset>
+
+    <div class="actionRow">
+      <button type="button" class="btn secondary" id="gateSettingsBtn">Settings and accessibility</button>
+    </div>
+    <p class="subtle" id="xrNote">Checking for an immersive VR device.</p>
+    <p class="subtle" id="storageNote">Your work saves automatically in this browser. You can close the tab and resume later.</p>
+  </div>
+</div>
+
+<!-- Heads-up display -->
+<div id="hud" style="display:none;">
+  <div class="hudPanel" id="progressPanel" role="region" aria-label="Investigation status and objective">
+    <div id="stationBanner">Station 1: Preparing for the Field</div>
+    <div class="hudRow"><span>Project days left</span><b id="daysValue">21</b></div>
+    <div class="daysBar" aria-hidden="true"><div id="daysBarFill" class="daysBarFill"></div></div>
+    <div class="hudRow"><span>Evidence records</span><b id="evidenceValue">0</b></div>
+    <div class="hudRow"><span>Stations complete</span><b id="stationsValue">0 of 9</b></div>
+    <div class="hudObjective">
+      <div id="objectiveText">Build your field kit</div>
+      <div id="objectiveDetail" class="subtle"></div>
+    </div>
+  </div>
+  <nav class="hudTools" aria-label="Investigation tools">
+    <button type="button" class="iconBtn" id="notebookBtn" aria-label="Open the field notebook (N)" title="Field notebook (N)">Notebook</button>
+    <button type="button" class="iconBtn" id="evidenceBtn" aria-label="Open the Evidence Room (V)" title="Evidence Room (V)">Evidence</button>
+    <button type="button" class="iconBtn" id="reportBtn" aria-label="Open the investigation report (P)" title="Investigation report (P)">Report</button>
+    <button type="button" class="iconBtn" id="settingsBtn" aria-label="Open settings (comma)" title="Settings">Settings</button>
+    <button type="button" class="iconBtn" id="helpBtn" aria-label="Show the controls (question mark)" title="Controls">Controls</button>
+    <button type="button" class="iconBtn vr" id="enterVrBtn" style="display:none;" aria-label="Enter or leave virtual reality" title="Enter or leave VR">Enter VR</button>
+  </nav>
+</div>
+
+<div id="sceneChrome" style="display:none;" role="region" aria-label="Site view and current objective">
+  <div id="miniMapWrap">
+    <div class="miniMapLabel"><span>Site map</span><span>North is up</span></div>
+    <canvas id="miniMap" width="200" height="200" role="img" aria-label="Decorative overview map of the site. The same information is available as text in the field notebook and the Evidence Room."></canvas>
+  </div>
+  <div id="viewControls" role="group" aria-label="Camera view controls (3D only)">
+    <button type="button" class="iconBtn small" id="turnLeftBtn" aria-label="Turn left">Turn left</button>
+    <button type="button" class="iconBtn small" id="faceObjectiveBtn" aria-label="Face the current objective (R)">Face objective</button>
+    <button type="button" class="iconBtn small" id="turnRightBtn" aria-label="Turn right">Turn right</button>
+  </div>
+  <button type="button" class="btn primary objectiveButton" id="objectiveButton">Build your field kit</button>
+</div>
+
+<div id="reticle" style="display:none;" aria-hidden="true"></div>
+<div id="interactPrompt" aria-hidden="true"></div>
+
+<div id="touchControls" style="display:none;">
+  <div id="joystickBase"><div id="joystickThumb"></div></div>
+  <div id="lookZone"></div>
+</div>
+<button type="button" id="mobileInteractBtn" style="display:none;">Interact</button>
+
+<div id="toastStack" aria-hidden="false"></div>
+<div id="liveRegion" class="visuallyHidden" role="status" aria-live="polite"></div>
+
+<!-- Guided access shell -->
+<div id="fallbackShell" style="display:none;">
+  <header class="fallbackHeader">
+    <h1>Redstone Bluff Archaeological Investigation</h1>
+    <p id="fallbackReason" class="subtle"></p>
+    <nav class="actionRow" aria-label="Guided mode tools">
+      <button type="button" class="btn primary" id="fallbackObjectiveBtn">Current objective</button>
+      <button type="button" class="btn secondary" id="fallbackNotebookBtn">Field notebook</button>
+      <button type="button" class="btn secondary" id="fallbackEvidenceBtn">Evidence Room</button>
+      <button type="button" class="btn secondary" id="fallbackSettingsBtn">Settings</button>
+      <button type="button" class="btn secondary" id="fallbackHelpBtn">Controls and help</button>
+    </nav>
+  </header>
+  <main id="fallbackBody"></main>
+</div>
+
+<!-- ============================ Panels ============================ -->
+
+<dialog id="briefingOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2 id="briefingTitle">Field briefing</h2>
+    <div id="briefingBody"></div>
+    <div class="actionRow"><button type="button" class="btn primary" id="briefingContinueBtn">Continue</button></div>
+  </div>
+</dialog>
+
+<dialog id="onboardingOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2>Getting around the site</h2>
+    <div id="onboardingSteps" class="stepList"></div>
+    <p>Your first task is the field kit. It opens next.</p>
+    <div class="actionRow"><button type="button" class="btn primary" id="onboardingContinueBtn">Build my field kit</button></div>
+  </div>
+</dialog>
+
+<dialog id="equipmentOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Preparing for the field</h2>
+    <p class="promptDetail">Load what this project needs. A few items on the trailer do not belong on a controlled excavation. What you leave behind will matter later, but nothing you forget will block you permanently.</p>
+    <div id="equipmentSummary" class="kitSummary"></div>
+    <div id="equipmentSections"></div>
+    <div id="equipmentJustify" class="justifyBox"></div>
+    <div class="actionRow">
+      <button type="button" class="btn primary" id="prepareKitBtn">Prepare the kit and head out</button>
+      <button type="button" class="btn secondary" id="closeEquipmentBtn">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="retrievalOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2>Missing from your kit</h2>
+    <div id="retrievalOverlayBody"></div>
+  </div>
+</dialog>
+
+<dialog id="surveyOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="surveyItemName">Surface object</h2>
+    <canvas id="surveyInspectCanvas" width="760" height="380"></canvas>
+    <p id="surveyItemDesc" class="promptDetail"></p>
+    <div id="surveyClassChoices"></div>
+    <div id="surveyFeedback"></div>
+    <div id="surveyRecordSection"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeSurveyBtn">Back to the transect</button></div>
+  </div>
+</dialog>
+
+<dialog id="surveySummaryOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Survey record and unit placement</h2>
+    <div id="surveySummaryBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeSurveySummaryBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="unitChoiceOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Excavation units</h2>
+    <div id="unitChoiceList"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeUnitChoiceBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="excavationOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="excavationTitle">Excavating</h2>
+    <div id="excavationBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeExcavationBtn">Step away</button></div>
+  </div>
+</dialog>
+
+<dialog id="featureOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="featureTitle">Feature record</h2>
+    <div id="featureBody"></div>
+  </div>
+</dialog>
+
+<dialog id="featureListOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Feature records</h2>
+    <div id="featureListBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeFeatureListBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="labOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Field laboratory</h2>
+    <p class="promptDetail">Only material you actually recovered is on these tables. Analysis can be revised at any time as other evidence changes what you think a context means.</p>
+    <div id="labBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeLabBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="labItemOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="labItemTitle">Analysis</h2>
+    <div id="labItemBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeLabItemBtn">Back to the laboratory</button></div>
+  </div>
+</dialog>
+
+<dialog id="datingOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Dating the site</h2>
+    <div id="datingBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeDatingBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="synthesisOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Reconstructing daily life</h2>
+    <div id="synthesisBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeSynthesisBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="speculativeOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2>This conclusion is not supported</h2>
+    <div id="speculativeBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeSpeculativeBtn">Cancel</button></div>
+  </div>
+</dialog>
+
+<dialog id="ethicsOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2 id="ethicsTitle">A professional decision</h2>
+    <div id="ethicsBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeEthicsBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="ethicsLogOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Professional decisions</h2>
+    <div id="ethicsLogBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeEthicsLogBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="evidenceOverlay" class="panelOverlay">
+  <div class="panelCard wide">
+    <h2>Evidence Room</h2>
+    <div id="evidenceTabs" class="tabRow" role="tablist" aria-label="Evidence Room sections"></div>
+    <div id="evidenceContent"></div>
+    <div id="evidenceReadiness" role="status"></div>
+    <div class="actionRow">
+      <button type="button" class="btn primary" id="goToReportBtn">Write the final report</button>
+      <button type="button" class="btn secondary" id="closeEvidenceBtn">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="reportOverlay" class="panelOverlay">
+  <div class="panelCard wide">
+    <h2>Tell the story of Redstone Bluff</h2>
+    <div id="reportBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeReportBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="resultsOverlay" class="panelOverlay">
+  <div class="panelCard wide">
+    <h2>Investigation report</h2>
+    <div id="resultsBody"></div>
+    <div class="actionRow">
+      <button type="button" class="btn primary" id="downloadReportBtn">Download the report</button>
+      <button type="button" class="btn secondary" id="downloadCsvBtn">Download the CSV log</button>
+      <button type="button" class="btn secondary" id="copyReportBtn">Copy the report</button>
+      <button type="button" class="btn secondary" id="copyXapiBtn">Copy the xAPI statements</button>
+      <button type="button" class="btn secondary" id="closeResultsBtn">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="copyFallbackOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Copy this text</h2>
+    <p class="promptDetail">Your browser blocked direct clipboard access. Select all of the text below and copy it.</p>
+    <textarea id="copyFallbackText" class="textInput" rows="14" readonly aria-label="Text to copy"></textarea>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeCopyFallbackBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="notebookOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Field notebook</h2>
+    <div id="notebookTabs" class="tabRow" role="tablist" aria-label="Notebook sections"></div>
+    <div id="notebookContent"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeNotebookBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="settingsOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Settings</h2>
+    <div id="settingsBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeSettingsBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="confirmOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2>Are you sure?</h2>
+    <div id="confirmBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeConfirmBtn">Cancel</button></div>
+  </div>
+</dialog>
+
+<dialog id="helpOverlay" class="panelOverlay">
+  <div class="panelCard narrow">
+    <h2>Controls</h2>
+    <div id="helpBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeHelpBtn">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="fallbackListOverlay" class="panelOverlay">
+  <div class="panelCard">
+    <h2>Surface survey transect</h2>
+    <div id="fallbackListBody"></div>
+    <div class="actionRow"><button type="button" class="btn secondary" id="closeFallbackListBtn">Close</button></div>
+  </div>
+</dialog>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

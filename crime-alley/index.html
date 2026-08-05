@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0; padding:0; height:100%;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case File: Marlowe Alley</title>
+</head>
+<body data-mode="3d" style="margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#0a0d12; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#e8ecf1; box-sizing:border-box;">
+
+<div id="loading" style="position:fixed; inset:0; z-index:200; background:#0a0d12; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;">
+  <div id="spinnerEl" style="width:34px; height:34px; border-radius:50%; border:3px solid #2a323f; border-top-color:#e8b34a; box-sizing:border-box;"></div>
+  <span style="font-size:12px; color:#8a94a6; letter-spacing:.08em;">SECURING THE SCENE…</span>
+</div>
+<script>
+  // Spinner rotation runs independently of the main app so it animates even while
+  // the Three.js CDN script is still loading (or if it fails to load at all).
+  (function(){
+    var el = document.getElementById('spinnerEl');
+    var angle = 0;
+    function spin(){
+      angle = (angle + 6) % 360;
+      el.style.transform = 'rotate(' + angle + 'deg)';
+      requestAnimationFrame(spin);
+    }
+    spin();
+  })();
+</script>
+
+<div id="startScreen" style="position:fixed; inset:0; z-index:100; background:radial-gradient(ellipse at center, #161b22 0%, #05070a 100%); display:flex; align-items:center; justify-content:center; box-sizing:border-box;">
+  <div id="startCard" style="width:min(460px,88vw); max-height:88vh; overflow-y:auto; padding:32px 28px; background:#12161d; border:1px solid #2a323f; border-radius:8px; text-align:center; box-sizing:border-box;">
+    <div style="text-align:left; margin-bottom:14px;">
+      <a href="../" style="display:inline-block; padding:6px 2px; color:#4ad0ff; font-size:12.5px; letter-spacing:.03em; text-decoration:underline; text-underline-offset:3px;">&larr; Back to UCF WebXR Experiences</a>
+    </div>
+    <div style="font-size:12px; color:#8a94a6; letter-spacing:.12em; margin-bottom:18px;">FORENSICS TRAINING MODULE</div>
+    <h1 style="font-size:23px; letter-spacing:.06em; color:#e8b34a; margin:0 0 6px;">CASE FILE: MARLOWE ALLEY</h1>
+    <p style="font-size:14px; line-height:1.6; color:#e8ecf1; text-align:left; margin:0 0 18px;">A theft and assault occurred in this alley last night. Your job as investigating officer
+       is to examine every marked item and classify it as <strong>relevant</strong> or
+       <strong>not relevant</strong> to the case. Not everything you find will matter —
+       part of good forensic work is knowing what to rule out.</p>
+    <label for="nameInput" style="display:block; font-size:12.5px; color:#8a94a6; text-align:left; margin-bottom:6px;">Investigator name</label>
+    <input id="nameInput" type="text" placeholder="e.g. Detective Alvarez" maxlength="40" style="width:100%; padding:10px 12px; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:14px; border-radius:4px; margin-bottom:18px; box-sizing:border-box;">
+    <div role="radiogroup" aria-label="Investigation mode" style="margin-bottom:18px; text-align:left;">
+      <div style="font-size:12.5px; color:#8a94a6; margin-bottom:8px;">Choose how you'd like to investigate:</div>
+      <button type="button" id="modeBtn3d" role="radio" aria-checked="true" style="display:block; width:100%; margin-bottom:8px; padding:10px 12px; border-radius:4px; border:1px solid #e8b34a; background:rgba(232,179,74,0.15); color:#e8ecf1; font-family:inherit; font-size:13.5px; text-align:left; cursor:pointer; box-sizing:border-box;">
+        <strong>3D Investigation Scene</strong><br><span style="font-size:11.5px; color:#8a94a6;">Explore the alley in 3D. Works with mouse, touch, or keyboard (arrow keys to look around, [ / ] to move between evidence, Enter to inspect).</span>
+      </button>
+      <button type="button" id="modeBtnText" role="radio" aria-checked="false" style="display:block; width:100%; padding:10px 12px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:13.5px; text-align:left; cursor:pointer; box-sizing:border-box;">
+        <strong>Text-Based Case File</strong><br><span style="font-size:11.5px; color:#8a94a6;">The same investigation as a fully accessible list — no 3D scene, works with screen readers.</span>
+      </button>
+    </div>
+    <button id="startBtn" style="width:100%; padding:12px; background:#e8b34a; color:#1a1305; border:none; border-radius:4px; font-family:inherit; font-weight:bold; letter-spacing:.05em; font-size:14px; cursor:pointer; box-sizing:border-box;">BEGIN INVESTIGATION</button>
+  </div>
+</div>
+
+<main id="textModeScreen" style="display:none; max-width:720px; margin:0 auto; padding:40px 20px 100px; box-sizing:border-box;">
+  <h2 style="color:#e8b34a; font-size:21px; letter-spacing:.04em; margin:0 0 6px;">CASE FILE: MARLOWE ALLEY — TEXT-BASED INVESTIGATION</h2>
+  <p style="font-size:14px; line-height:1.6; color:#e8ecf1; margin:0 0 16px;">Review each item below. For each one, choose whether it's relevant to the case, explain your reasoning, then submit. Once every item is classified, you'll be asked to summarize your conclusions.</p>
+  <div style="margin-bottom:20px; padding:14px 16px; background:#12161d; border:1px solid #2a323f; border-radius:6px; box-sizing:border-box;">
+    <p id="briefingText" style="font-size:14px; line-height:1.7; color:#e8ecf1; margin:0 0 10px; font-style:italic;">"Rain on brick, three in the morning, give or take. Somebody didn't want to be found in this alley — and somebody else wasn't meant to be here at all. Fourteen pieces of this puzzle are scattered between the dumpster and the fire escape. Your job: sort what matters from what doesn't. Let's get to work."</p>
+    <button type="button" id="btnPlayBriefing" aria-pressed="false" style="padding:8px 14px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#4ad0ff; font-family:inherit; font-size:12.5px; cursor:pointer; box-sizing:border-box;">🔊 Play Case Briefing</button>
+    <div id="voicePickerRow" style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <label for="narratorVoiceSelect" style="font-size:12px; color:#8a94a6;">Narrator voice:</label>
+      <select id="narratorVoiceSelect" style="flex:1; min-width:160px; background:#0d1117; color:#e8ecf1; border:1px solid #2a323f; border-radius:4px; font-family:inherit; font-size:12.5px; padding:6px; box-sizing:border-box;">
+        <option value="">Auto (best available)</option>
+      </select>
+    </div>
+  </div>
+  <div id="textProgress" aria-live="polite" style="font-size:13.5px; color:#e8b34a; margin:0 0 20px; font-weight:bold;"></div>
+  <div id="textCaseList"></div>
+</main>
+
+<div id="stage" style="position:fixed; inset:0;"></div>
+
+<div id="topbar" style="position:fixed; z-index:10; background:rgba(18,22,29,0.92); border:1px solid #2a323f; border-radius:6px; backdrop-filter:blur(6px); box-shadow:0 8px 24px rgba(0,0,0,0.5); top:16px; left:16px; right:16px; padding:12px 18px; display:flex; align-items:center; justify-content:space-between; box-sizing:border-box;">
+  <div>
+    <div style="font-size:15px; letter-spacing:.06em; color:#e8b34a;">CASE FILE: MARLOWE ALLEY</div>
+    <div style="font-size:11.5px; color:#8a94a6; letter-spacing:.08em; margin-top:2px;">Orbit to examine · click a numbered marker, or use keyboard controls below, to inspect evidence</div>
+    <div id="kbMarkerIndicator" aria-live="polite" style="font-size:11px; color:#4ad0ff; letter-spacing:.03em; margin-top:4px;"></div>
+  </div>
+  <div id="progress" style="font-size:13px; color:#e8ecf1; letter-spacing:.05em;">CLASSIFIED <span id="progressCount" style="color:#e8b34a; font-weight:bold;">0</span>/<span id="progressTotal" style="color:#e8b34a; font-weight:bold;">0</span></div>
+</div>
+
+<div id="log" style="position:fixed; z-index:10; background:rgba(18,22,29,0.92); border:1px solid #2a323f; border-radius:6px; backdrop-filter:blur(6px); box-shadow:0 8px 24px rgba(0,0,0,0.5); top:76px; left:16px; width:220px; max-height:60vh; overflow-y:auto; padding:12px 14px; font-size:12px; box-sizing:border-box;">
+  <h3 style="margin:0 0 8px; font-size:12px; letter-spacing:.08em; color:#8a94a6;">EVIDENCE LOG</h3>
+  <div id="logList"></div>
+</div>
+
+<div id="evidencePanel" role="dialog" aria-modal="true" aria-labelledby="evName" style="position:fixed; z-index:10; background:rgba(18,22,29,0.92); border:1px solid #2a323f; border-radius:6px; backdrop-filter:blur(6px); box-shadow:0 8px 24px rgba(0,0,0,0.5); top:76px; right:16px; width:300px; padding:18px; display:none; box-sizing:border-box;">
+  <button id="closePanel" style="background:none; border:none; color:#8a94a6; font-size:17px; position:absolute; top:10px; right:12px; cursor:pointer;">✕</button>
+  <div id="evTag" style="font-size:11.5px; color:#e8b34a; letter-spacing:.1em; margin-bottom:4px;">EVIDENCE MARKER</div>
+  <h3 id="evName" style="margin:0 0 10px; font-size:17px;"></h3>
+  <div id="evThumb" style="width:100%; height:90px; border-radius:4px; margin-bottom:12px; border:1px solid #2a323f; box-sizing:border-box;"></div>
+  <p id="evDesc" style="font-size:13px; line-height:1.6; color:#e8ecf1; margin:0 0 14px;"></p>
+  <div style="display:flex; gap:8px; margin-bottom:10px;">
+    <button id="btnRelevant" style="flex:1; padding:10px 6px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:12px; letter-spacing:.04em; cursor:pointer; box-sizing:border-box;">RELEVANT TO CASE</button>
+    <button id="btnNotRelevant" style="flex:1; padding:10px 6px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:12px; letter-spacing:.04em; cursor:pointer; box-sizing:border-box;">NOT RELEVANT</button>
+  </div>
+  <div id="reasoningBlock" style="display:none;">
+    <label for="reasonInput" style="display:block; font-size:11.5px; color:#8a94a6; letter-spacing:.03em; margin-bottom:6px;">Why? (required before you can submit)</label>
+    <textarea id="reasonInput" rows="3" placeholder="Explain your reasoning in a sentence or two..." style="width:100%; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:12.5px; padding:8px; border-radius:4px; resize:vertical; margin-bottom:8px; box-sizing:border-box;"></textarea>
+    <button id="btnSubmitClassification" disabled style="width:100%; padding:10px; border-radius:4px; border:none; background:#2a323f; color:#8a94a6; font-family:inherit; font-size:12px; letter-spacing:.05em; font-weight:bold; cursor:not-allowed; box-sizing:border-box;">SUBMIT CLASSIFICATION</button>
+  </div>
+  <div id="feedback" style="font-size:12.5px; line-height:1.6; padding:10px; border-radius:4px; margin-bottom:10px; display:none; box-sizing:border-box;"></div>
+  <div id="reasonReview" style="font-size:12px; line-height:1.6; padding:10px; border-radius:4px; background:rgba(255,255,255,0.03); border:1px solid #2a323f; color:#8a94a6; margin-top:8px; display:none; box-sizing:border-box;"></div>
+</div>
+
+<div id="controls" style="position:fixed; z-index:10; background:rgba(18,22,29,0.92); border:1px solid #2a323f; border-radius:6px; backdrop-filter:blur(6px); box-shadow:0 8px 24px rgba(0,0,0,0.5); bottom:16px; left:16px; right:16px; padding:10px 18px; display:flex; align-items:center; justify-content:space-between; box-sizing:border-box;">
+  <span style="font-size:11.5px; color:#8a94a6; letter-spacing:.03em;">Drag to orbit · scroll / pinch to zoom</span>
+  <button id="resetView" style="background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:11.5px; padding:6px 12px; border-radius:4px; cursor:pointer; letter-spacing:.05em; box-sizing:border-box;">RESET VIEW</button>
+</div>
+
+<div id="conclusionOverlay" role="dialog" aria-modal="true" aria-labelledby="conclusionHeading" style="position:fixed; inset:0; z-index:140; background:rgba(5,7,10,0.9); display:none; align-items:center; justify-content:center; box-sizing:border-box;">
+  <div id="conclusionCard" style="width:min(480px,90vw); max-height:86vh; overflow-y:auto; padding:28px; background:#12161d; border:1px solid #2a323f; border-radius:8px; box-sizing:border-box;">
+    <h2 id="conclusionHeading" style="color:#e8b34a; margin:0 0 4px; font-size:19px; letter-spacing:.04em;">CASE CONCLUSION</h2>
+    <div style="font-size:12.5px; color:#8a94a6; margin-bottom:18px; line-height:1.6;">All evidence has been classified. Before you close the case, write up your findings.</div>
+    <label for="conclusionLearned" style="display:block; font-size:12.5px; color:#e8ecf1; margin:14px 0 6px; font-weight:bold;">What did the evidence teach you about what happened in this alley?</label>
+    <textarea id="conclusionLearned" rows="4" placeholder="Based on the evidence you marked relevant, summarize what you believe happened..." style="width:100%; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:13px; padding:10px; border-radius:4px; resize:vertical; box-sizing:border-box;"></textarea>
+    <label for="conclusionNextSteps" style="display:block; font-size:12.5px; color:#e8ecf1; margin:14px 0 6px; font-weight:bold;">What should investigators do next?</label>
+    <textarea id="conclusionNextSteps" rows="4" placeholder="e.g. pull security footage, run forensic tests, canvass witnesses, match the footprint..." style="width:100%; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:13px; padding:10px; border-radius:4px; resize:vertical; box-sizing:border-box;"></textarea>
+    <button id="btnSubmitConclusion" disabled style="width:100%; margin-top:18px; padding:12px; border-radius:4px; border:none; background:#2a323f; color:#8a94a6; font-family:inherit; font-weight:bold; letter-spacing:.05em; font-size:13px; cursor:not-allowed; box-sizing:border-box;">SUBMIT CASE CONCLUSION</button>
+  </div>
+</div>
+
+<div id="reportOverlay" role="dialog" aria-modal="true" aria-labelledby="reportHeading" style="position:fixed; inset:0; z-index:150; background:rgba(5,7,10,0.85); display:none; align-items:center; justify-content:center; box-sizing:border-box;">
+  <div id="reportCard" style="width:min(520px,90vw); max-height:86vh; overflow-y:auto; padding:28px; background:#12161d; border:1px solid #2a323f; border-radius:8px; box-sizing:border-box;">
+    <h2 id="reportHeading" style="color:#e8b34a; margin:0 0 4px; font-size:19px; letter-spacing:.04em;">CASE REPORT</h2>
+    <div id="reportSub" style="font-size:12px; color:#8a94a6; margin-bottom:18px;"></div>
+    <div id="conclusionDisplay" style="margin-bottom:16px; font-size:13px; line-height:1.6; background:rgba(255,255,255,0.03); border:1px solid #2a323f; border-radius:4px; padding:12px; box-sizing:border-box;"></div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a323f; font-size:13.5px;"><span>Evidence classified</span><span style="color:#e8b34a; font-weight:bold;" id="statCoverage"></span></div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a323f; font-size:13.5px;"><span>Correct classifications (first attempt)</span><span style="color:#e8b34a; font-weight:bold;" id="statAccuracy"></span></div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a323f; font-size:13.5px;"><span>Time on scene</span><span style="color:#e8b34a; font-weight:bold;" id="statTime"></span></div>
+    <div id="missedList" style="margin:14px 0; font-size:12.5px; color:#e0525a; line-height:1.7;"></div>
+    <h3 style="margin:18px 0 8px; font-size:13.5px; color:#e8b34a; letter-spacing:.06em;">CASE ANALYSIS</h3>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a323f; font-size:13.5px;"><span>Relevant evidence correctly identified</span><span style="color:#e8b34a; font-weight:bold;" id="statSensitivity"></span></div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a323f; font-size:13.5px;"><span>Non-relevant items correctly ruled out</span><span style="color:#e8b34a; font-weight:bold;" id="statSpecificity"></span></div>
+    <div id="analysisNote" style="font-size:12.5px; line-height:1.6; color:#e8ecf1; margin-top:10px;"></div>
+    <h3 style="margin:18px 0 8px; font-size:13.5px; color:#e8b34a; letter-spacing:.06em;">YOUR REASONING vs. CASE NOTES</h3>
+    <div id="reasoningReviewList" style="font-size:12px; line-height:1.7;"></div>
+    <div id="reportActions" style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
+      <button id="btnCopySummary" style="flex:1; min-width:120px; padding:10px; border-radius:4px; border:none; background:#e8b34a; color:#1a1305; font-family:inherit; font-size:12px; font-weight:bold; cursor:pointer; box-sizing:border-box;">COPY SUMMARY</button>
+      <button id="btnExportCsv" style="flex:1; min-width:120px; padding:10px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:12px; cursor:pointer; box-sizing:border-box;">EXPORT CSV</button>
+      <button id="btnCloseReport" style="flex:1; min-width:120px; padding:10px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:12px; cursor:pointer; box-sizing:border-box;">BACK TO SCENE</button>
+    </div>
+    <div id="copyStatus" style="font-size:11.5px; color:#5ad18a; margin-top:8px; height:14px;"></div>
+  </div>
+</div>
+
+<script>
+  // Responsive layout adjustments (replaces @media max-width:760px, since styles are inline)
+  function applyResponsiveLayout(){
+    if(document.body.dataset.mode === 'text') return; // text mode manages its own layout
+    var narrow = window.innerWidth <= 760;
+    document.getElementById('log').style.display = narrow ? 'none' : 'block';
+    var panel = document.getElementById('evidencePanel');
+    if(narrow){
+      panel.style.width = 'auto';
+      panel.style.left = '8px';
+      panel.style.right = '8px';
+    } else {
+      panel.style.width = '300px';
+      panel.style.left = '';
+      panel.style.right = '16px';
+    }
+    var topbar = document.getElementById('topbar');
+    topbar.style.left = narrow ? '8px' : '16px';
+    topbar.style.right = narrow ? '8px' : '16px';
+    var controls = document.getElementById('controls');
+    controls.style.left = narrow ? '8px' : '16px';
+    controls.style.right = narrow ? '8px' : '16px';
+  }
+  applyResponsiveLayout();
+  window.addEventListener('resize', applyResponsiveLayout);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.addEventListener('load', () => {
+  if (typeof THREE === 'undefined') {
+    document.getElementById('loading').innerHTML =
+      '<span style="color:#ff6b4a; max-width:280px; text-align:center; line-height:1.6;">Couldn\'t load the 3D engine library (network blocked). Please check your connection and reload.</span>';
+    return;
+  }
+  init();
+});
+
+function init(){
+/* ============================================================
+   SHARED STATE (mode selection, modal focus tracking)
+   ============================================================ */
+let investigationMode = '3d'; // '3d' | 'text'
+let activeModal = null; // the currently open dialog element, or null
+let modalReturnFocus = null; // element to restore focus to when the modal closes
+
+/* ============================================================
+   CONTENT SCHEMA — evidence items
+   ============================================================ */
+const CLUES = [
+  { id:'ev01', number:1, pos:[3.05, 1.3, -1.2], name:'Blood spatter on brick wall',
+    narration:"Marker one. The east wall, chest height. A spray of dark stains, still tacky in the damp air. Somebody bled here, and not from a scraped knee.",
+    relevant:true, desc:'A cast-off blood spatter pattern at chest height on the east wall, consistent with a struggle rather than an accidental fall.',
+    explanation:'Spatter pattern and height indicate contact during the assault — directly relevant.' },
+  { id:'ev02', number:2, pos:[2.05, 1.0, -3.0], name:'Torn fabric on chain-link fence',
+    narration:"Marker two. Caught on the chain-link fence, a scrap of dark blue cloth. Torn, not cut. Somebody left in a hurry, and left a piece of themselves behind.",
+    relevant:true, desc:'A scrap of dark blue fabric snagged on the fence, roughly two meters from the point of the struggle.',
+    explanation:'Likely torn from the suspect or victim\'s clothing while fleeing — relevant.' },
+  { id:'ev03', number:3, pos:[-0.6, 0.02, 1.6], name:'Footprint in puddle',
+    narration:"Marker three. A puddle, shallow and still. And pressed into it, clear as a signature: the print of a shoe.",
+    relevant:true, desc:'A partial shoe impression preserved in a shallow puddle, tread pattern visible.',
+    explanation:'A preserved shoe impression can be matched to a suspect — relevant.' },
+  { id:'ev04', number:4, pos:[0.4, 0.05, -0.4], name:'Dropped wallet',
+    narration:"Marker four. Lying open in the middle of the alley, a leather wallet. Worn at the corners. Whoever dropped it wasn't planning to leave it behind.",
+    relevant:true, desc:'A worn leather wallet lying open near the center of the alley, contents undisturbed.',
+    explanation:'Directly ties an individual to the scene and may confirm the victim\'s identity — relevant.' },
+  { id:'ev05', number:5, pos:[2.4, 0.05, 0.8], name:'Broken bottle',
+    narration:"Marker five. Glass, shattered, jagged edge catching what little light there is. Could've been an accident. Could've been a weapon.",
+    relevant:true, desc:'A shattered bottle near the struggle site, jagged edge facing outward, no visible residue yet tested.',
+    explanation:'Possible improvised weapon consistent with injury patterns — relevant.' },
+  { id:'ev06', number:6, pos:[-2.0, 0.05, 0.6], name:'Cigarette butt near dumpster',
+    narration:"Marker six. Near the dumpster, a single cigarette butt. Fresh. Somebody stood here a while, waiting.",
+    relevant:true, desc:'A single fresh cigarette butt, unusual brand, resting away from any designated smoking area.',
+    explanation:'May carry DNA and suggests someone waited here before the incident — relevant.' },
+  { id:'ev07', number:7, pos:[0.0, 0.02, -1.9], name:'Drag marks on pavement',
+    narration:"Marker seven. Two long scuff marks in the grime, dragging toward the mouth of the alley. Something, or someone, was moved.",
+    relevant:true, desc:'Two parallel scuff marks in the grime leading from the struggle site toward the alley mouth.',
+    explanation:'Consistent with a body or heavy object being moved — relevant.' },
+  { id:'ev08', number:8, pos:[-2.85, 1.9, -0.5], name:'Security camera',
+    narration:"Marker eight. Up above the fire escape, a security camera, weathered but watching. If it saw what happened here, it's still got the story.",
+    relevant:true, desc:'A weathered security camera mounted above the fire escape, angled toward the alley interior.',
+    explanation:'Footage from this camera could confirm timeline and identity — relevant, pending retrieval.' },
+
+  { id:'ev09', number:9, pos:[3.05, 1.6, -0.6], name:'Graffiti tag',
+    narration:"Marker nine. Spray paint on brick, faded and peeling. Old news. This wall's worn that tag for weeks.",
+    relevant:false, desc:'A faded spray-paint tag on the wall, clearly weeks old based on the paint\'s weathering.',
+    explanation:'Predates the incident and has no connection to it — not relevant.' },
+  { id:'ev10', number:10, pos:[-1.2, 0.03, -2.3], name:'Old newspaper',
+    narration:"Marker ten. A newspaper, soggy and sun-bleached, wedged by a drain. Yesterday's news, and then some.",
+    relevant:false, desc:'A soggy, sun-bleached newspaper wedged near a drain, several weeks old by the printed date.',
+    explanation:'Litter that predates the incident — not relevant.' },
+  { id:'ev11', number:11, pos:[1.4, 0.06, 1.9], name:'Empty soda can',
+    narration:"Marker eleven. A crushed soda can, half-buried in the debris. The kind of thing this alley collects on any given night.",
+    relevant:false, desc:'A crushed, rusted soda can half-buried in debris near a crate.',
+    explanation:'Common litter with no connection to the incident — not relevant.' },
+  { id:'ev12', number:12, pos:[-1.6, 0.05, 2.0], name:'Rusted bicycle frame',
+    narration:"Marker twelve. A bicycle frame, rusted through, missing both wheels. Been here longer than the case has.",
+    relevant:false, desc:'An abandoned bicycle frame, heavily rusted, missing both wheels, clearly discarded long ago.',
+    explanation:'Long-term abandoned property, unrelated to the incident — not relevant.' },
+  { id:'ev13', number:13, pos:[2.0, 0.1, -2.4], name:'Stacked trash bags',
+    narration:"Marker thirteen. Trash bags, stacked and sealed, right where the sanitation crew left them. Nothing here but garbage.",
+    relevant:false, desc:'Routine municipal trash bags stacked by the dumpster, undisturbed and sealed.',
+    explanation:'Normal alley clutter, no sign of tampering — not relevant.' },
+  { id:'ev14', number:14, pos:[-0.2, 0.02, 2.4], name:'Pigeon feathers',
+    narration:"Marker fourteen. A scatter of feathers near the drain. The pigeons on that fire escape have been busy.",
+    relevant:false, desc:'A small cluster of feathers near a drain, consistent with birds roosting on the fire escape above.',
+    explanation:'Natural wildlife activity, unrelated to the incident — not relevant.' },
+];
+
+/* ============================================================
+   TELEMETRY — shared event stream
+   ============================================================ */
+const telemetry = {
+  investigator: '',
+  sessionStart: null,
+  events: [],
+  openTimes: {},
+  log(objectId, event, extra){
+    const e = { objectId, event, timestamp: performance.now(), ...extra };
+    this.events.push(e);
+    return e;
+  },
+  markOpened(id){ this.openTimes[id] = performance.now(); this.log(id,'opened'); },
+  markClosed(id){
+    const start = this.openTimes[id];
+    this.log(id,'closed', start ? { dwellMs: performance.now()-start } : {});
+  },
+  markAnswered(id, correct, attempts){ this.log(id,'answered', { correct, attempts }); },
+  coverage(){
+    const opened = new Set(this.events.filter(e=>e.event==='opened').map(e=>e.objectId));
+    return { visited: opened.size, total: CLUES.length };
+  },
+  accuracy(){
+    const answered = this.events.filter(e=>e.event==='answered');
+    const firstTry = answered.filter(e=>e.attempts===1);
+    const correct = firstTry.filter(e=>e.correct===true);
+    return { correct: correct.length, total: answered.length };
+  },
+  totalTimeMs(){
+    if (!this.sessionStart) return 0;
+    return performance.now() - this.sessionStart;
+  }
+};
+
+const classification = {}; // objectId -> {answered, correct, attempts}
+
+/* ============================================================
+   RENDERER / SCENE FOUNDATION
+   ============================================================ */
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x141a24);
+scene.fog = new THREE.FogExp2(0x141a24, 0.028);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.6;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+
+// lighting
+const ambient = new THREE.HemisphereLight(0x4a5d7a, 0x1a1d24, 1.5);
+scene.add(ambient);
+const moonLight = new THREE.DirectionalLight(0xaec2e0, 0.65);
+moonLight.position.set(-6, 10, -4);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(1024,1024);
+moonLight.shadow.camera.left=-8; moonLight.shadow.camera.right=8;
+moonLight.shadow.camera.top=8; moonLight.shadow.camera.bottom=-8;
+scene.add(moonLight);
+const fillLight = new THREE.PointLight(0x7a8cad, 0.6, 14, 2);
+fillLight.position.set(0, 3.5, 1);
+scene.add(fillLight);
+
+/* ---- procedural textures ---- */
+function makeBrickTexture(){
+  const c = document.createElement('canvas'); c.width=256; c.height=256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#3a2b26'; g.fillRect(0,0,256,256);
+  const rows=16, bh=256/rows;
+  for(let r=0;r<rows;r++){
+    const offset = (r%2)*20;
+    for(let x=-20;x<256+20;x+=48){
+      g.fillStyle = `rgb(${70+Math.random()*20|0},${45+Math.random()*15|0},${38+Math.random()*12|0})`;
+      g.fillRect(x+offset, r*bh, 44, bh-3);
+    }
+  }
+  g.strokeStyle='rgba(0,0,0,0.35)'; g.lineWidth=2;
+  for(let r=0;r<=rows;r++){ g.beginPath(); g.moveTo(0,r*bh); g.lineTo(256,r*bh); g.stroke(); }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeAsphaltTexture(){
+  const c = document.createElement('canvas'); c.width=256; c.height=256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a1c20'; g.fillRect(0,0,256,256);
+  for(let i=0;i<3000;i++){
+    const v = 20+Math.random()*30|0;
+    g.fillStyle = `rgba(${v},${v},${v+4},0.5)`;
+    g.fillRect(Math.random()*256, Math.random()*256, 1.5, 1.5);
+  }
+  // wet puddle patches
+  for(let i=0;i<6;i++){
+    const x=Math.random()*256, y=Math.random()*256, r=18+Math.random()*26;
+    const grad = g.createRadialGradient(x,y,0,x,y,r);
+    grad.addColorStop(0,'rgba(70,90,120,0.35)');
+    grad.addColorStop(1,'rgba(70,90,120,0)');
+    g.fillStyle = grad;
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeRustTexture(){
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#3d4a3f'; g.fillRect(0,0,128,128);
+  for(let i=0;i<800;i++){
+    const v = Math.random();
+    g.fillStyle = v>0.5 ? `rgba(120,70,40,${0.2+Math.random()*0.3})` : `rgba(20,25,20,${0.2+Math.random()*0.3})`;
+    g.fillRect(Math.random()*128, Math.random()*128, 3, 3);
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+const brickTex = makeBrickTexture(); brickTex.repeat.set(3,1.5);
+const asphaltTex = makeAsphaltTexture(); asphaltTex.repeat.set(3,4);
+const rustTex = makeRustTexture();
+
+/* ---- ground ---- */
+const groundGeo = new THREE.PlaneGeometry(9, 12);
+const groundMat = new THREE.MeshStandardMaterial({ map:asphaltTex, roughness:0.85, metalness:0.05 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ---- walls ---- */
+const wallMat = new THREE.MeshStandardMaterial({ map:brickTex, roughness:0.95 });
+const wallGeo = new THREE.BoxGeometry(0.4, 6, 12);
+const wallL = new THREE.Mesh(wallGeo, wallMat);
+wallL.position.set(-3.2, 3, 0); wallL.castShadow = true; wallL.receiveShadow = true;
+scene.add(wallL);
+const wallR = new THREE.Mesh(wallGeo, wallMat);
+wallR.position.set(3.2, 3, 0); wallR.castShadow = true; wallR.receiveShadow = true;
+scene.add(wallR);
+const backWall = new THREE.Mesh(new THREE.BoxGeometry(6.8,6,0.4), wallMat);
+backWall.position.set(0,3,-6); backWall.castShadow = true; backWall.receiveShadow = true;
+scene.add(backWall);
+
+/* ---- dumpster ---- */
+const dumpsterMat = new THREE.MeshStandardMaterial({ map:rustTex, roughness:0.8, metalness:0.4 });
+const dumpster = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.1,0.9), dumpsterMat);
+dumpster.position.set(-2.2, 0.55, -3.6);
+dumpster.castShadow = true; dumpster.receiveShadow = true;
+scene.add(dumpster);
+const dumpsterLid = new THREE.Mesh(new THREE.BoxGeometry(1.7,0.08,1.0), dumpsterMat);
+dumpsterLid.position.set(-2.2, 1.14, -3.6);
+dumpsterLid.rotation.z = 0.15;
+scene.add(dumpsterLid);
+
+/* ---- fire escape (simplified ladder + platform) ---- */
+const metalMat = new THREE.MeshPhysicalMaterial({ color:0x2b3038, roughness:0.6, clearcoat:0.3, clearcoatRoughness:0.5, metalness:0.7 });
+const feGroup = new THREE.Group();
+const fePlatform = new THREE.Mesh(new THREE.BoxGeometry(1.4,0.08,0.8), metalMat);
+fePlatform.position.set(-2.85, 2.6, -0.5);
+feGroup.add(fePlatform);
+for(let i=0;i<5;i++){
+  const rung = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.04,0.04), metalMat);
+  rung.position.set(-2.95, 0.4+i*0.5, -1.2);
+  feGroup.add(rung);
+}
+const feRailL = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,2.4), metalMat);
+feRailL.position.set(-2.75, 1.4, -1.2); feGroup.add(feRailL);
+feGroup.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
+scene.add(feGroup);
+
+/* ---- chain-link fence (alley mouth, back-right corner) ---- */
+function makeFenceTexture(){
+  const c=document.createElement('canvas'); c.width=128; c.height=128;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,128,128);
+  g.strokeStyle='rgba(180,185,190,0.8)'; g.lineWidth=2;
+  for(let i=-128;i<256;i+=16){
+    g.beginPath(); g.moveTo(i,0); g.lineTo(i+128,128); g.stroke();
+    g.beginPath(); g.moveTo(i,128); g.lineTo(i+128,0); g.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+const fenceTex = makeFenceTexture(); fenceTex.wrapS=fenceTex.wrapT=THREE.RepeatWrapping; fenceTex.repeat.set(4,2);
+const fenceMat = new THREE.MeshStandardMaterial({ map:fenceTex, transparent:true, side:THREE.DoubleSide, roughness:0.6 });
+const fence = new THREE.Mesh(new THREE.PlaneGeometry(2.2,2.2), fenceMat);
+fence.position.set(2.0, 1.1, -3.0);
+fence.rotation.y = Math.PI/2;
+scene.add(fence);
+
+/* ---- crates / clutter ---- */
+const crateMat = new THREE.MeshStandardMaterial({ color:0x4a3a28, roughness:0.9 });
+[[1.6,-1.8],[1.9,-2.1],[-1.0,2.6]].forEach(([x,z],i)=>{
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5), crateMat);
+  crate.position.set(x,0.25,z); crate.rotation.y = i*0.6;
+  crate.castShadow = true; crate.receiveShadow = true;
+  scene.add(crate);
+});
+
+/* ---- streetlamp ---- */
+const lampGroup = new THREE.Group();
+const lampPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,3.2), metalMat);
+lampPole.position.set(2.6, 1.6, 2.6);
+lampGroup.add(lampPole);
+const lampHead = new THREE.Mesh(new THREE.SphereGeometry(0.18,12,12), new THREE.MeshStandardMaterial({ color:0xfff2c9, emissive:0xffcf7a, emissiveIntensity:1.4 }));
+lampHead.position.set(2.6, 3.15, 2.6);
+lampGroup.add(lampHead);
+const lampLight = new THREE.PointLight(0xffcf8a, 2.6, 12, 2);
+lampLight.position.set(2.6, 3.0, 2.6);
+lampLight.castShadow = true;
+lampGroup.add(lampLight);
+// glow sprite
+const glowTex = (function(){
+  const c=document.createElement('canvas'); c.width=64; c.height=64;
+  const g=c.getContext('2d');
+  const grad=g.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,'rgba(255,220,150,0.9)'); grad.addColorStop(1,'rgba(255,220,150,0)');
+  g.fillStyle=grad; g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+})();
+const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false }));
+glowSprite.scale.set(1.4,1.4,1);
+glowSprite.position.set(2.6, 3.15, 2.6);
+lampGroup.add(glowSprite);
+scene.add(lampGroup);
+
+/* ---- dust / mist particles ---- */
+const mistCount = 120;
+const mistGeo = new THREE.BufferGeometry();
+const mistPos = new Float32Array(mistCount*3);
+for(let i=0;i<mistCount;i++){
+  mistPos[i*3] = (Math.random()-0.5)*6;
+  mistPos[i*3+1] = Math.random()*2.5;
+  mistPos[i*3+2] = (Math.random()-0.5)*11;
+}
+mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos,3));
+const mistMat = new THREE.PointsMaterial({ color:0x8fa0b8, size:0.03, transparent:true, opacity:0.25, blending:THREE.AdditiveBlending, depthWrite:false });
+const mist = new THREE.Points(mistGeo, mistMat);
+scene.add(mist);
+
+/* ---- light rain ---- */
+const RAIN_COUNT = 500;
+const RAIN_AREA = { x:8, yTop:6, z:13 };
+const rainGeo = new THREE.BufferGeometry();
+const rainPos = new Float32Array(RAIN_COUNT*3);
+const rainSpeed = new Float32Array(RAIN_COUNT);
+for(let i=0;i<RAIN_COUNT;i++){
+  rainPos[i*3] = (Math.random()-0.5)*RAIN_AREA.x;
+  rainPos[i*3+1] = Math.random()*RAIN_AREA.yTop;
+  rainPos[i*3+2] = (Math.random()-0.5)*RAIN_AREA.z;
+  rainSpeed[i] = 4 + Math.random()*3;
+}
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos,3));
+const rainMat = new THREE.PointsMaterial({ color:0xaebdd6, size:0.045, transparent:true, opacity:0.55,
+  blending:THREE.AdditiveBlending, depthWrite:false });
+const rain = new THREE.Points(rainGeo, rainMat);
+scene.add(rain);
+
+function updateRain(dt){
+  const pos = rainGeo.attributes.position.array;
+  for(let i=0;i<RAIN_COUNT;i++){
+    pos[i*3+1] -= rainSpeed[i]*dt;
+    if(pos[i*3+1] < 0){
+      pos[i*3+1] = RAIN_AREA.yTop;
+      pos[i*3] = (Math.random()-0.5)*RAIN_AREA.x;
+      pos[i*3+2] = (Math.random()-0.5)*RAIN_AREA.z;
+    }
+  }
+  rainGeo.attributes.position.needsUpdate = true;
+}
+
+/* ---- puddle ripple rings (subtle, reinforces wet pavement) ---- */
+const rippleTex = (function(){
+  const c=document.createElement('canvas'); c.width=64; c.height=64;
+  const g=c.getContext('2d');
+  g.strokeStyle='rgba(180,200,220,0.5)'; g.lineWidth=2;
+  g.beginPath(); g.arc(32,32,24,0,Math.PI*2); g.stroke();
+  return new THREE.CanvasTexture(c);
+})();
+const ripples = [];
+for(let i=0;i<4;i++){
+  const ripple = new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.6),
+    new THREE.MeshBasicMaterial({ map:rippleTex, transparent:true, opacity:0, depthWrite:false }));
+  ripple.rotation.x = -Math.PI/2;
+  ripple.position.set((Math.random()-0.5)*4, 0.01, (Math.random()-0.5)*8);
+  ripple.userData.phase = Math.random()*3;
+  scene.add(ripple);
+  ripples.push(ripple);
+}
+function updateRipples(elapsed){
+  ripples.forEach(r=>{
+    const cycle = (elapsed*0.4 + r.userData.phase) % 3;
+    const scale = 0.2 + cycle*0.5;
+    r.scale.set(scale,scale,1);
+    r.material.opacity = Math.max(0, 0.4*(1 - cycle/3));
+  });
+}
+
+/* ============================================================
+   EVIDENCE MARKERS (numbered yellow forensic tents)
+   ============================================================ */
+function makeMarkerTexture(number){
+  const c=document.createElement('canvas'); c.width=96; c.height=96;
+  const g=c.getContext('2d');
+  g.fillStyle='#f2c11a'; g.fillRect(0,0,96,96);
+  g.strokeStyle='#000'; g.lineWidth=4; g.strokeRect(2,2,92,92);
+  g.fillStyle='#000'; g.font='bold 52px monospace'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(String(number), 48, 52);
+  return new THREE.CanvasTexture(c);
+}
+/* ---- decal texture helpers ---- */
+function makeBloodSpatterTexture(){
+  const c=document.createElement('canvas'); c.width=128; c.height=128;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,128,128);
+  g.fillStyle='#5a0e0e';
+  for(let i=0;i<26;i++){
+    const x=64+(Math.random()-0.5)*90, y=64+(Math.random()-0.5)*90, r=1.5+Math.random()*5;
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
+  }
+  g.beginPath(); g.arc(64,64,10,0,Math.PI*2); g.fill();
+  return new THREE.CanvasTexture(c);
+}
+function makeFootprintTexture(){
+  const c=document.createElement('canvas'); c.width=96; c.height=160;
+  const g=c.getContext('2d');
+  g.fillStyle='rgba(70,90,120,0.4)'; g.beginPath(); g.ellipse(48,80,44,76,0,0,Math.PI*2); g.fill();
+  g.fillStyle='rgba(15,20,28,0.55)';
+  g.beginPath(); g.ellipse(48,40,22,30,0,0,Math.PI*2); g.fill(); // heel
+  g.beginPath(); g.ellipse(48,110,26,44,0,0,Math.PI*2); g.fill(); // ball/toe
+  g.strokeStyle='rgba(15,20,28,0.5)'; g.lineWidth=3;
+  for(let y=70;y<150;y+=10){ g.beginPath(); g.moveTo(24,y); g.lineTo(72,y); g.stroke(); }
+  return new THREE.CanvasTexture(c);
+}
+function makeGraffitiTexture(){
+  const c=document.createElement('canvas'); c.width=160; c.height=90;
+  const g=c.getContext('2d');
+  g.strokeStyle='#3a7d5a'; g.lineWidth=8; g.lineCap='round';
+  g.beginPath(); g.moveTo(15,70); g.quadraticCurveTo(50,10,90,55); g.quadraticCurveTo(120,90,145,30); g.stroke();
+  g.strokeStyle='#c94f4f'; g.lineWidth=5;
+  g.beginPath(); g.moveTo(20,20); g.lineTo(140,75); g.stroke();
+  return new THREE.CanvasTexture(c);
+}
+function makeDragMarksTexture(){
+  const c=document.createElement('canvas'); c.width=64; c.height=192;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,64,192);
+  g.strokeStyle='rgba(10,12,15,0.5)'; g.lineWidth=8; g.lineCap='round';
+  g.beginPath(); g.moveTo(16,10); g.lineTo(16,182); g.stroke();
+  g.beginPath(); g.moveTo(48,10); g.lineTo(48,182); g.stroke();
+  return new THREE.CanvasTexture(c);
+}
+function makeNewsprintTexture(){
+  const c=document.createElement('canvas'); c.width=96; c.height=128;
+  const g=c.getContext('2d');
+  g.fillStyle='#cfc4a8'; g.fillRect(0,0,96,128);
+  g.fillStyle='rgba(40,40,35,0.6)';
+  for(let y=8;y<120;y+=7){ g.fillRect(6, y, 60+Math.random()*24, 2.5); }
+  g.fillStyle='rgba(30,30,25,0.8)'; g.font='bold 14px sans-serif'; g.fillText('DAILY',6,20);
+  return new THREE.CanvasTexture(c);
+}
+
+const bloodTex = makeBloodSpatterTexture();
+const footprintTex = makeFootprintTexture();
+const graffitiTex = makeGraffitiTexture();
+const dragTex = makeDragMarksTexture();
+const newsprintTex = makeNewsprintTexture();
+
+/* ---- per-clue evidence geometry ---- */
+function buildEvidenceMesh(clue){
+  const g = new THREE.Group();
+  switch(clue.id){
+    case 'ev01': { // blood spatter on wall
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.9),
+        new THREE.MeshBasicMaterial({ map:bloodTex, transparent:true }));
+      plane.rotation.y = -Math.PI/2;
+      g.add(plane);
+      break;
+    }
+    case 'ev02': { // torn fabric on fence
+      const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.22,0.3),
+        new THREE.MeshStandardMaterial({ color:0x2b3a6b, side:THREE.DoubleSide, roughness:0.9 }));
+      cloth.rotation.y = Math.PI/2 + 0.3;
+      cloth.rotation.z = 0.4;
+      g.add(cloth);
+      break;
+    }
+    case 'ev03': { // footprint in puddle
+      const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.5,24),
+        new THREE.MeshStandardMaterial({ color:0x3a4a5e, roughness:0.15, metalness:0.3, transparent:true, opacity:0.65 }));
+      puddle.rotation.x = -Math.PI/2;
+      g.add(puddle);
+      const print = new THREE.Mesh(new THREE.PlaneGeometry(0.28,0.46),
+        new THREE.MeshBasicMaterial({ map:footprintTex, transparent:true }));
+      print.rotation.x = -Math.PI/2; print.position.y = 0.005;
+      g.add(print);
+      break;
+    }
+    case 'ev04': { // dropped wallet
+      const leather = new THREE.MeshStandardMaterial({ color:0x4a3220, roughness:0.75 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.02,0.14), leather);
+      base.rotation.z = 0.15;
+      g.add(base);
+      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.02,0.1), leather);
+      flap.position.set(0.02,0.015,-0.03); flap.rotation.x = -0.5; flap.rotation.z=0.15;
+      g.add(flap);
+      g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      break;
+    }
+    case 'ev05': { // broken bottle
+      const glass = new THREE.MeshPhysicalMaterial({ color:0x2e5c3a, roughness:0.15, transmission:0.4, transparent:true, opacity:0.85, clearcoat:0.6, clearcoatRoughness:0.2 });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.22,10), glass);
+      body.position.y = 0.11; g.add(body);
+      const shard = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.12,6), glass);
+      shard.position.y = 0.24; shard.rotation.z = 0.3;
+      g.add(shard);
+      g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      g.rotation.z = 1.4; g.position.y = 0.06;
+      break;
+    }
+    case 'ev06': { // cigarette butt
+      const butt = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.09,8),
+        new THREE.MeshStandardMaterial({ color:0xe8e2d0, roughness:0.8 }));
+      butt.rotation.z = Math.PI/2; butt.position.y = 0.012;
+      g.add(butt);
+      const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.013,0.013,0.02,8),
+        new THREE.MeshStandardMaterial({ color:0xd4763a, roughness:0.6 }));
+      tip.rotation.z = Math.PI/2; tip.position.set(0.05,0.012,0);
+      g.add(tip);
+      break;
+    }
+    case 'ev07': { // drag marks
+      const marks = new THREE.Mesh(new THREE.PlaneGeometry(0.5,1.5),
+        new THREE.MeshBasicMaterial({ map:dragTex, transparent:true }));
+      marks.rotation.x = -Math.PI/2;
+      g.add(marks);
+      break;
+    }
+    case 'ev08': { // security camera
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.14,0.28), metalMat);
+      g.add(body);
+      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.06,12),
+        new THREE.MeshStandardMaterial({ color:0x0a0a0a, roughness:0.2, metalness:0.6 }));
+      lens.rotation.x = Math.PI/2; lens.position.z = 0.16;
+      g.add(lens);
+      const mount = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.1,0.04), metalMat);
+      mount.position.set(0,0.1,-0.1);
+      g.add(mount);
+      const rec = new THREE.Mesh(new THREE.SphereGeometry(0.012,6,6),
+        new THREE.MeshStandardMaterial({ color:0xff2a2a, emissive:0xff0000, emissiveIntensity:1.2 }));
+      rec.position.set(0.07,0.05,0.15);
+      g.add(rec);
+      g.rotation.y = 0.5;
+      g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      break;
+    }
+    case 'ev09': { // graffiti tag
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.6),
+        new THREE.MeshBasicMaterial({ map:graffitiTex, transparent:true }));
+      plane.rotation.y = -Math.PI/2;
+      g.add(plane);
+      break;
+    }
+    case 'ev10': { // old newspaper
+      const paper = new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.4),
+        new THREE.MeshStandardMaterial({ map:newsprintTex, side:THREE.DoubleSide, roughness:0.95 }));
+      paper.rotation.x = -Math.PI/2; paper.rotation.z = 0.4;
+      g.add(paper);
+      break;
+    }
+    case 'ev11': { // soda can
+      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.032,0.032,0.11,10),
+        new THREE.MeshStandardMaterial({ color:0xb02030, roughness:0.4, metalness:0.6 }));
+      can.rotation.z = Math.PI/2; can.position.y = 0.03;
+      g.add(can);
+      g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      break;
+    }
+    case 'ev12': { // rusted bicycle frame
+      const rustMat2 = new THREE.MeshStandardMaterial({ map:rustTex, roughness:0.9, metalness:0.3 });
+      const wheelBack = new THREE.Mesh(new THREE.TorusGeometry(0.22,0.012,6,16), rustMat2);
+      wheelBack.position.set(-0.25,0.22,0); g.add(wheelBack);
+      const wheelFront = new THREE.Mesh(new THREE.TorusGeometry(0.22,0.012,6,16), rustMat2);
+      wheelFront.position.set(0.25,0.22,0); g.add(wheelFront);
+      const bar1 = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.5,6), rustMat2);
+      bar1.rotation.z = Math.PI/2; bar1.position.set(0,0.35,0); g.add(bar1);
+      const bar2 = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.32,6), rustMat2);
+      bar2.rotation.z = 0.9; bar2.position.set(-0.15,0.28,0); g.add(bar2);
+      g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      break;
+    }
+    case 'ev13': { // stacked trash bags
+      const bagMat = new THREE.MeshStandardMaterial({ color:0x14161a, roughness:0.85 });
+      const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,6), bagMat);
+      b1.scale.set(1,0.7,1); b1.position.y = 0.15; g.add(b1);
+      const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,6), bagMat);
+      b2.scale.set(1,0.6,1); b2.position.set(0.15,0.34,0.05); g.add(b2);
+      g.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
+      break;
+    }
+    case 'ev14': { // pigeon feathers
+      const featherMat = new THREE.MeshStandardMaterial({ color:0xd8d4c8, roughness:0.9, side:THREE.DoubleSide });
+      for(let i=0;i<5;i++){
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(0.05,0.14), featherMat);
+        f.rotation.x = -Math.PI/2; f.rotation.z = Math.random()*Math.PI;
+        f.position.set((Math.random()-0.5)*0.2, 0.003, (Math.random()-0.5)*0.2);
+        g.add(f);
+      }
+      break;
+    }
+    default: {
+      const fallback = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.15,0.15),
+        new THREE.MeshStandardMaterial({ color:0xaaaaaa }));
+      g.add(fallback);
+    }
+  }
+  return g;
+}
+
+const markerMeshes = [];
+const markerGlowTex = (function(){
+  const c=document.createElement('canvas'); c.width=64; c.height=64;
+  const g=c.getContext('2d');
+  const grad=g.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,'rgba(255,220,60,0.5)'); grad.addColorStop(1,'rgba(255,220,60,0)');
+  g.fillStyle=grad; g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+})();
+CLUES.forEach(clue=>{
+  // actual rendered evidence geometry
+  const evidence = buildEvidenceMesh(clue);
+  evidence.position.set(clue.pos[0], clue.pos[1], clue.pos[2]);
+  scene.add(evidence);
+
+  // invisible hitbox for reliable clicking regardless of prop complexity/size
+  const hitbox = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),
+    new THREE.MeshBasicMaterial({ visible:false }));
+  hitbox.position.set(clue.pos[0], clue.pos[1]+0.1, clue.pos[2]);
+  hitbox.userData.clueId = clue.id;
+  scene.add(hitbox);
+  markerMeshes.push(hitbox);
+
+  // floating number tag so items stay identifiable at a glance
+  const tagTex = makeMarkerTexture(clue.number);
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tagTex, depthTest:true }));
+  tag.scale.set(0.24,0.24,1);
+  tag.position.set(clue.pos[0], clue.pos[1]+0.42, clue.pos[2]);
+  scene.add(tag);
+
+  // subtle glow halo at floor level so items are easy to spot
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map:markerGlowTex, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false }));
+  halo.scale.set(0.8,0.8,1);
+  halo.position.set(clue.pos[0], clue.pos[1]+0.03, clue.pos[2]);
+  scene.add(halo);
+});
+
+/* ============================================================
+   KEYBOARD EVIDENCE CYCLING (no raycasting required)
+   [ / ] or N / P cycle between markers; Enter or Space opens the
+   currently highlighted one. This is the keyboard-only equivalent
+   of clicking a marker with the mouse.
+   ============================================================ */
+const orderedClues = CLUES.slice().sort((a,b)=>a.number-b.number);
+let kbMarkerIndex = 0;
+
+const kbHighlightRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.24,0.3,24),
+  new THREE.MeshBasicMaterial({ color:0x4ad0ff, transparent:true, opacity:0.9, side:THREE.DoubleSide })
+);
+kbHighlightRing.rotation.x = -Math.PI/2;
+kbHighlightRing.visible = false;
+scene.add(kbHighlightRing);
+
+function updateKbHighlight(){
+  const clue = orderedClues[kbMarkerIndex];
+  kbHighlightRing.position.set(clue.pos[0], 0.02, clue.pos[2]);
+  kbHighlightRing.visible = (investigationMode==='3d');
+  const indicator = document.getElementById('kbMarkerIndicator');
+  if(indicator){
+    indicator.textContent = `Keyboard focus: Marker ${clue.number} — ${clue.name}. Press Enter to inspect, [ or ] to move between markers.`;
+  }
+}
+function cycleKbMarker(delta){
+  kbMarkerIndex = (kbMarkerIndex + delta + orderedClues.length) % orderedClues.length;
+  updateKbHighlight();
+}
+window.addEventListener('keydown', e=>{
+  if(investigationMode !== '3d') return;
+  if(isTypingContext()) return;
+  if(activeModal) return;
+  if(e.key === ']' || e.key.toLowerCase() === 'n'){ cycleKbMarker(1); e.preventDefault(); }
+  else if(e.key === '[' || e.key.toLowerCase() === 'p'){ cycleKbMarker(-1); e.preventDefault(); }
+  else if(e.key === 'Enter' || e.key === ' '){
+    openEvidence(orderedClues[kbMarkerIndex].id);
+    e.preventDefault();
+  }
+});
+updateKbHighlight();
+
+/* ============================================================
+   ORBIT CAMERA (custom spherical controls, drag + pinch/scroll + keyboard)
+   ============================================================ */
+const focal = new THREE.Vector3(0, 1.3, -1);
+const DEFAULT_AZIMUTH = 0.5, DEFAULT_POLAR = 1.3, DEFAULT_RADIUS = 4.2;
+let camAzimuth = DEFAULT_AZIMUTH, camPolar = DEFAULT_POLAR, camRadius = DEFAULT_RADIUS;
+const RADIUS_MIN=2.5, RADIUS_MAX=7, POLAR_MIN=0.6, POLAR_MAX=1.45;
+
+function updateCameraFromSpherical(){
+  const x = focal.x + camRadius*Math.sin(camPolar)*Math.sin(camAzimuth);
+  const y = focal.y + camRadius*Math.cos(camPolar);
+  const z = focal.z + camRadius*Math.sin(camPolar)*Math.cos(camAzimuth);
+  camera.position.set(x,y,z);
+  camera.lookAt(focal);
+}
+updateCameraFromSpherical();
+
+let dragging=false, lastX=0, lastY=0;
+function onDragStart(x,y){ dragging=true; lastX=x; lastY=y; }
+function onDragMove(x,y){
+  if(!dragging) return;
+  const dx=x-lastX, dy=y-lastY;
+  camAzimuth -= dx*0.005;
+  camPolar = Math.max(POLAR_MIN, Math.min(POLAR_MAX, camPolar - dy*0.005));
+  lastX=x; lastY=y;
+  updateCameraFromSpherical();
+}
+function onDragEnd(){ dragging=false; }
+
+renderer.domElement.addEventListener('mousedown', e=>onDragStart(e.clientX,e.clientY));
+window.addEventListener('mousemove', e=>onDragMove(e.clientX,e.clientY));
+window.addEventListener('mouseup', onDragEnd);
+renderer.domElement.addEventListener('touchstart', e=>{ if(e.touches.length===1) onDragStart(e.touches[0].clientX,e.touches[0].clientY); }, {passive:true});
+renderer.domElement.addEventListener('touchmove', e=>{ if(e.touches.length===1) onDragMove(e.touches[0].clientX,e.touches[0].clientY); }, {passive:true});
+renderer.domElement.addEventListener('touchend', onDragEnd);
+
+renderer.domElement.addEventListener('wheel', e=>{
+  e.preventDefault();
+  camRadius = Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, camRadius + e.deltaY*0.01));
+  updateCameraFromSpherical();
+}, { passive:false });
+
+// simple pinch zoom
+let pinchStartDist=null, pinchStartRadius=camRadius;
+renderer.domElement.addEventListener('touchstart', e=>{
+  if(e.touches.length===2){
+    const dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
+    pinchStartDist = Math.hypot(dx,dy); pinchStartRadius = camRadius;
+  }
+}, {passive:true});
+renderer.domElement.addEventListener('touchmove', e=>{
+  if(e.touches.length===2 && pinchStartDist){
+    const dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
+    const dist = Math.hypot(dx,dy);
+    camRadius = Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, pinchStartRadius * (pinchStartDist/dist)));
+    updateCameraFromSpherical();
+  }
+}, {passive:true});
+
+document.getElementById('resetView').addEventListener('click', ()=>{
+  camAzimuth=DEFAULT_AZIMUTH; camPolar=DEFAULT_POLAR; camRadius=DEFAULT_RADIUS; updateCameraFromSpherical();
+});
+
+// Keyboard camera controls: arrow keys orbit, +/- zoom.
+// Ignored while typing in a form field, and only active in 3D mode / when no modal is open.
+function isTypingContext(){
+  const t = document.activeElement && document.activeElement.tagName;
+  return t === 'INPUT' || t === 'TEXTAREA';
+}
+window.addEventListener('keydown', e=>{
+  if(investigationMode !== '3d') return;
+  if(isTypingContext()) return;
+  if(activeModal) return; // don't move the camera while a dialog has focus
+  const AZ_STEP = 0.06, POLAR_STEP = 0.045, ZOOM_STEP = 0.3;
+  switch(e.key){
+    case 'ArrowLeft': camAzimuth -= AZ_STEP; updateCameraFromSpherical(); e.preventDefault(); break;
+    case 'ArrowRight': camAzimuth += AZ_STEP; updateCameraFromSpherical(); e.preventDefault(); break;
+    case 'ArrowUp': camPolar = Math.max(POLAR_MIN, camPolar - POLAR_STEP); updateCameraFromSpherical(); e.preventDefault(); break;
+    case 'ArrowDown': camPolar = Math.min(POLAR_MAX, camPolar + POLAR_STEP); updateCameraFromSpherical(); e.preventDefault(); break;
+    case '+': case '=': camRadius = Math.max(RADIUS_MIN, camRadius - ZOOM_STEP); updateCameraFromSpherical(); e.preventDefault(); break;
+    case '-': case '_': camRadius = Math.min(RADIUS_MAX, camRadius + ZOOM_STEP); updateCameraFromSpherical(); e.preventDefault(); break;
+  }
+});
+
+/* ============================================================
+   RAYCAST CLICK HANDLING
+   ============================================================ */
+const raycaster = new THREE.Raycaster();
+const pointerV = new THREE.Vector2();
+let dragDistance = 0;
+renderer.domElement.addEventListener('mousedown', ()=>{ dragDistance=0; });
+window.addEventListener('mousemove', e=>{ if(dragging) dragDistance += Math.abs(e.movementX||0)+Math.abs(e.movementY||0); });
+
+renderer.domElement.addEventListener('click', e=>{
+  if(dragDistance > 6) return; // treat as drag, not click
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerV.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  pointerV.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(pointerV, camera);
+  const hits = raycaster.intersectObjects(markerMeshes);
+  if(hits.length){
+    const clueId = hits[0].object.userData.clueId;
+    openEvidence(clueId);
+  }
+});
+
+/* ============================================================
+   EVIDENCE PANEL / CLASSIFICATION UI
+   ============================================================ */
+const panel = document.getElementById('evidencePanel');
+let currentClueId = null;
+let pendingChoice = null; // true = relevant, false = not relevant, null = nothing picked yet
+
+function clueById(id){ return CLUES.find(c=>c.id===id); }
+
+// style constants used for JS-driven visual state (replaces CSS classes)
+const COLORS = { good:'#5ad18a', bad:'#e0525a', accent:'#e8b34a', panelLine:'#2a323f', muted:'#8a94a6', text:'#e8ecf1' };
+function resetChoiceBtnStyle(btn){
+  btn.style.background = '#0d1117';
+  btn.style.borderColor = COLORS.panelLine;
+}
+function setChoiceBtnState(btn, state){ // state: 'pending' | 'good' | 'bad' | null
+  if(state==='pending'){ btn.style.background='rgba(232,179,74,0.18)'; btn.style.borderColor=COLORS.accent; }
+  else if(state==='good'){ btn.style.background='rgba(90,209,138,0.18)'; btn.style.borderColor=COLORS.good; }
+  else if(state==='bad'){ btn.style.background='rgba(224,82,90,0.18)'; btn.style.borderColor=COLORS.bad; }
+  else { resetChoiceBtnStyle(btn); }
+}
+function setSubmitButtonEnabledStyle(btn, enabled){
+  btn.disabled = !enabled;
+  btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+  btn.style.background = enabled ? COLORS.accent : COLORS.panelLine;
+  btn.style.color = enabled ? '#1a1305' : COLORS.muted;
+}
+
+/* ============================================================
+   MODAL FOCUS MANAGEMENT (evidence panel, conclusion, report)
+   Moves focus into the dialog on open, traps Tab within it,
+   supports Escape to close (where appropriate), and restores
+   focus to the triggering element on close.
+   ============================================================ */
+function getFocusableIn(container){
+  return Array.from(container.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'))
+    .filter(el => !el.disabled && el.offsetParent !== null);
+}
+function openModal(modalEl, displayValue){
+  if(ttsSupported) speechSynthesis.cancel();
+  modalReturnFocus = document.activeElement;
+  activeModal = modalEl;
+  modalEl.style.display = displayValue;
+  const focusable = getFocusableIn(modalEl);
+  if(focusable.length) focusable[0].focus();
+}
+function closeModal(modalEl){
+  modalEl.style.display = 'none';
+  if(activeModal === modalEl) activeModal = null;
+  if(modalReturnFocus && typeof modalReturnFocus.focus === 'function') modalReturnFocus.focus();
+  modalReturnFocus = null;
+}
+window.addEventListener('keydown', e=>{
+  if(!activeModal) return;
+  if(e.key === 'Escape'){
+    // The conclusion step is required before the report, so it's not Escape-dismissable;
+    // the evidence panel and report are just informational/optional dialogs.
+    if(activeModal.id === 'evidencePanel'){
+      closeModal(activeModal);
+      if(currentClueId){ telemetry.markClosed(currentClueId); currentClueId=null; }
+    } else if(activeModal.id === 'reportOverlay'){
+      closeModal(activeModal);
+    }
+    return;
+  }
+  if(e.key === 'Tab'){
+    const focusable = getFocusableIn(activeModal);
+    if(!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length-1];
+    if(e.shiftKey && document.activeElement === first){ last.focus(); e.preventDefault(); }
+    else if(!e.shiftKey && document.activeElement === last){ first.focus(); e.preventDefault(); }
+  }
+});
+
+function openEvidence(id){
+  if(currentClueId && currentClueId!==id) telemetry.markClosed(currentClueId);
+  currentClueId = id;
+  pendingChoice = null;
+  const clue = clueById(id);
+  telemetry.markOpened(id);
+
+  document.getElementById('evTag').textContent = `MARKER ${clue.number}`;
+  document.getElementById('evName').textContent = clue.name;
+  document.getElementById('evDesc').textContent = clue.desc;
+  const thumb = document.getElementById('evThumb');
+  thumb.style.background = `linear-gradient(135deg, #23262c, #14161a)`;
+
+  const feedback = document.getElementById('feedback');
+  const btnR = document.getElementById('btnRelevant');
+  const btnN = document.getElementById('btnNotRelevant');
+  const reasoningBlock = document.getElementById('reasoningBlock');
+  const reasonInput = document.getElementById('reasonInput');
+  const reasonReview = document.getElementById('reasonReview');
+  resetChoiceBtnStyle(btnR); resetChoiceBtnStyle(btnN);
+  feedback.style.display='none'; feedback.textContent='';
+  reasonInput.value=''; reasonInput.disabled=false;
+  reasoningBlock.style.display='none';
+  reasonReview.style.display='none';
+  setSubmitButtonEnabledStyle(document.getElementById('btnSubmitClassification'), false);
+
+  const state = classification[id];
+  btnR.disabled = btnN.disabled = !!state;
+  if(state){
+    renderFeedback(clue, state.choice);
+    reasonInput.value = state.reasoning;
+    reasonInput.disabled = true;
+    reasoningBlock.style.display='block';
+    document.getElementById('btnSubmitClassification').style.display='none';
+    showReasonReview(clue, state);
+  } else {
+    document.getElementById('btnSubmitClassification').style.display='block';
+  }
+  openModal(panel, 'block');
+}
+
+function pickChoice(isRelevant){
+  if(classification[currentClueId]) return; // already locked in
+  pendingChoice = isRelevant;
+  setChoiceBtnState(document.getElementById('btnRelevant'), isRelevant ? 'pending' : null);
+  setChoiceBtnState(document.getElementById('btnNotRelevant'), !isRelevant ? 'pending' : null);
+  document.getElementById('reasoningBlock').style.display = 'block';
+  updateSubmitEnabled();
+}
+function updateSubmitEnabled(){
+  const text = document.getElementById('reasonInput').value.trim();
+  setSubmitButtonEnabledStyle(document.getElementById('btnSubmitClassification'), pendingChoice!==null && text.length>0);
+}
+document.getElementById('reasonInput').addEventListener('input', updateSubmitEnabled);
+
+function renderFeedback(clue, choiceWasRelevant){
+  const feedback = document.getElementById('feedback');
+  const correct = choiceWasRelevant === clue.relevant;
+  setChoiceBtnState(document.getElementById(choiceWasRelevant?'btnRelevant':'btnNotRelevant'), correct?'good':'bad');
+  feedback.style.display = 'block';
+  if(correct){
+    feedback.style.background='rgba(90,209,138,0.12)'; feedback.style.border='1px solid '+COLORS.good; feedback.style.color=COLORS.good;
+  } else {
+    feedback.style.background='rgba(224,82,90,0.12)'; feedback.style.border='1px solid '+COLORS.bad; feedback.style.color=COLORS.bad;
+  }
+  feedback.textContent = (correct ? '✓ Correct. ' : '✗ Not quite. ') + clue.explanation;
+  refreshLog();
+  refreshProgress();
+}
+
+function showReasonReview(clue, state){
+  const review = document.getElementById('reasonReview');
+  review.innerHTML = `<div style="color:${COLORS.text};"><strong>Your reasoning:</strong> ${escapeHtml(state.reasoning)}</div>`;
+  review.style.display = 'block';
+}
+function escapeHtml(s){
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+function gradeAndRecord(clueId, isRelevant, reasoning){
+  const clue = clueById(clueId);
+  const correct = isRelevant === clue.relevant;
+  classification[clueId] = { choice:isRelevant, correct, answered:true, reasoning };
+  telemetry.markAnswered(clueId, correct, 1);
+  return correct;
+}
+
+function submitClassification(){
+  if(!currentClueId || pendingChoice===null) return;
+  if(classification[currentClueId]) return; // one submission per item
+  const clue = clueById(currentClueId);
+  const reasoning = document.getElementById('reasonInput').value.trim();
+  if(!reasoning) return;
+  gradeAndRecord(currentClueId, pendingChoice, reasoning);
+  renderFeedback(clue, pendingChoice);
+  document.getElementById('reasonInput').disabled = true;
+  document.getElementById('btnSubmitClassification').style.display='none';
+  showReasonReview(clue, classification[currentClueId]);
+  maybeShowReport();
+}
+
+document.getElementById('btnRelevant').addEventListener('click', ()=>pickChoice(true));
+document.getElementById('btnNotRelevant').addEventListener('click', ()=>pickChoice(false));
+document.getElementById('btnSubmitClassification').addEventListener('click', submitClassification);
+document.getElementById('closePanel').addEventListener('click', ()=>{
+  closeModal(panel);
+  if(currentClueId){ telemetry.markClosed(currentClueId); currentClueId=null; }
+});
+
+function refreshProgress(){
+  const done = Object.keys(classification).length;
+  document.getElementById('progressCount').textContent = done;
+  document.getElementById('progressTotal').textContent = CLUES.length;
+  const tp = document.getElementById('textProgress');
+  if(tp) tp.textContent = `${done} of ${CLUES.length} evidence items classified.`;
+}
+function refreshLog(){
+  const list = document.getElementById('logList');
+  list.innerHTML = '';
+  CLUES.forEach(clue=>{
+    const state = classification[clue.id];
+    const row = document.createElement('div');
+    const borderColor = state ? (state.correct?COLORS.good:COLORS.bad) : COLORS.panelLine;
+    row.style.cssText = `padding:6px 8px; margin-bottom:5px; border-radius:3px; border-left:3px solid ${borderColor}; background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; gap:6px;`;
+    const markColor = state ? (state.correct?COLORS.good:COLORS.bad) : COLORS.muted;
+    row.innerHTML = `<span>#${clue.number} ${clue.name}</span>` +
+      `<span style="font-size:11px; letter-spacing:.05em; color:${markColor};">${state ? (state.correct?'✓':'✗') : '…'}</span>`;
+    list.appendChild(row);
+  });
+}
+
+/* ============================================================
+   NOIR NARRATOR (audio layer, optional — text stays primary)
+   Uses the browser's built-in speech synthesis, so there's no
+   external audio file or network dependency. Text-to-speech
+   support and voice quality vary a lot by browser/OS — every
+   narrated item keeps its full text visible regardless of
+   whether audio plays, and a voice picker lets a student choose
+   whatever sounds best on their own device.
+   ============================================================ */
+const ttsSupported = ('speechSynthesis' in window);
+let ttsVoices = [];
+let manualVoiceURI = null; // student's explicit voice choice, overrides auto-pick
+
+function voiceQualityScore(v){
+  const n = v.name.toLowerCase();
+  let score = 0;
+  if(/natural|neural|enhanced|premium|online/.test(n)) score += 3; // modern high-quality engines
+  if(/google/.test(n)) score += 2;
+  if(/samantha|daniel|alex|karen|moira|tessa|david|zira/.test(n)) score += 1; // solid default OS voices
+  if(/compact|espeak|robot/.test(n)) score -= 3; // known low-quality/robotic-sounding engines
+  return score;
+}
+function pickNarratorVoice(){
+  if(manualVoiceURI){
+    const chosen = ttsVoices.find(v=>v.voiceURI===manualVoiceURI);
+    if(chosen) return chosen;
+  }
+  if(!ttsVoices.length) return null;
+  const english = ttsVoices.filter(v=>v.lang && v.lang.toLowerCase().startsWith('en'));
+  const pool = english.length ? english : ttsVoices;
+  return pool.slice().sort((a,b)=>voiceQualityScore(b)-voiceQualityScore(a))[0];
+}
+function cacheVoices(){
+  ttsVoices = speechSynthesis.getVoices();
+  const select = document.getElementById('narratorVoiceSelect');
+  if(select && ttsVoices.length && select.options.length <= 1){
+    const englishVoices = ttsVoices
+      .filter(v=>v.lang && v.lang.toLowerCase().startsWith('en'))
+      .slice()
+      .sort((a,b)=>a.name.localeCompare(b.name));
+    select.innerHTML = '<option value="">Auto (best available)</option>' +
+      englishVoices.map(v=>`<option value="${v.voiceURI}">${v.name} (${v.lang})</option>`).join('');
+  }
+}
+if(ttsSupported){
+  speechSynthesis.onvoiceschanged = cacheVoices;
+  cacheVoices();
+  const voiceSelect = document.getElementById('narratorVoiceSelect');
+  if(voiceSelect) voiceSelect.addEventListener('change', e=>{ manualVoiceURI = e.target.value || null; });
+} else {
+  const row = document.getElementById('voicePickerRow');
+  if(row) row.style.display = 'none';
+}
+
+// Subtle vintage-radio static bed, played under narration via Web Audio's
+// procedural noise generation (no audio files) — reinforces the broadcast
+// framing without trying to change the voice's own timbre, which the
+// Web Speech API doesn't reliably allow filtering anyway.
+let audioCtx = null, staticNodes = null;
+function ensureAudioCtx(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    audioCtx = new AC();
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function startRadioStatic(){
+  const ctx = ensureAudioCtx();
+  if(!ctx) return;
+  const bufferSize = 2*ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = Math.random()*2-1; }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer; noise.loop = true;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass'; bandpass.frequency.value = 2000; bandpass.Q.value = 0.5;
+  const gain = ctx.createGain();
+  gain.gain.value = 0; gain.gain.linearRampToValueAtTime(0.02, ctx.currentTime+0.4);
+  noise.connect(bandpass); bandpass.connect(gain); gain.connect(ctx.destination);
+  noise.start();
+  staticNodes = { noise, gain, ctx };
+}
+function stopRadioStatic(){
+  if(!staticNodes) return;
+  const { noise, gain, ctx } = staticNodes;
+  try{
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime+0.3);
+    noise.stop(ctx.currentTime+0.35);
+  }catch(err){ /* already stopped */ }
+  staticNodes = null;
+}
+
+let currentlySpeakingBtn = null;
+function setNarrateButtonSpeaking(btn, speaking, labels){
+  if(!btn) return;
+  const onLabel = (labels && labels[0]) || '⏹ Stop';
+  const offLabel = (labels && labels[1]) || '🔊 Narrate';
+  btn.textContent = speaking ? onLabel : offLabel;
+  btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
+}
+function stopSpeaking(){
+  speechSynthesis.cancel();
+  stopRadioStatic();
+  if(currentlySpeakingBtn) setNarrateButtonSpeaking(currentlySpeakingBtn, false);
+  currentlySpeakingBtn = null;
+}
+function speakSentenceChain(sentences, idx, btn, labels){
+  if(currentlySpeakingBtn !== btn) return; // stopped or replaced by another narration
+  if(idx >= sentences.length){
+    setNarrateButtonSpeaking(btn, false, labels);
+    currentlySpeakingBtn = null;
+    stopRadioStatic();
+    return;
+  }
+  const utter = new SpeechSynthesisUtterance(sentences[idx]);
+  const voice = pickNarratorVoice();
+  if(voice) utter.voice = voice;
+  utter.rate = 0.93;   // slightly unhurried, radio-announcer pacing
+  utter.pitch = 0.97;  // close to natural — heavy pitch-shifting is what made it sound artificial
+  utter.onend = ()=>{ setTimeout(()=>speakSentenceChain(sentences, idx+1, btn, labels), 240); };
+  utter.onerror = ()=>{ setNarrateButtonSpeaking(btn,false,labels); currentlySpeakingBtn=null; stopRadioStatic(); };
+  speechSynthesis.speak(utter);
+}
+function speakNarration(text, btn, labels){
+  if(!ttsSupported) return;
+  const wasThisBtn = (currentlySpeakingBtn === btn);
+  stopSpeaking();
+  if(wasThisBtn) return; // clicking the same "stop" button just stops it
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  currentlySpeakingBtn = btn;
+  setNarrateButtonSpeaking(btn, true, labels);
+  startRadioStatic();
+  speakSentenceChain(sentences, 0, btn, labels);
+}
+if(!ttsSupported){
+  document.getElementById('btnPlayBriefing').style.display = 'none';
+}
+document.getElementById('btnPlayBriefing').addEventListener('click', ()=>{
+  const btn = document.getElementById('btnPlayBriefing');
+  const text = document.getElementById('briefingText').textContent;
+  speakNarration(text, btn, ['⏹ Stop Briefing', '🔊 Play Case Briefing']);
+});
+
+/* ============================================================
+   TEXT-BASED CASE FILE (parallel non-visual mode)
+   Same content, same classification/reasoning/telemetry logic as
+   the 3D scene, delivered as ordinary keyboard- and screen-reader-
+   navigable HTML instead of requiring 3D interaction.
+   ============================================================ */
+const textPending = {}; // clueId -> boolean choice, set once picked but not yet submitted
+const textOpened = new Set();
+
+function buildTextCaseItemHtml(clue){
+  const narrateBtn = ttsSupported ? `<button type="button" data-narrate="${clue.id}" aria-pressed="false" style="float:right; padding:4px 10px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#4ad0ff; font-family:inherit; font-size:12px; cursor:pointer; box-sizing:border-box;">🔊 Narrate</button>` : '';
+  return `
+    <section aria-labelledby="clueHeading-${clue.id}" style="margin-bottom:18px; padding:16px; background:#12161d; border:1px solid #2a323f; border-radius:6px; box-sizing:border-box;">
+      ${narrateBtn}
+      <h3 id="clueHeading-${clue.id}" style="margin:0 0 8px; font-size:15px; color:#e8b34a;">Marker ${clue.number}: ${clue.name}</h3>
+      <p style="font-size:14px; line-height:1.6; margin:0 0 12px; color:#e8ecf1;">${clue.desc}</p>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <button type="button" data-clue="${clue.id}" data-choice="relevant" style="flex:1; padding:10px 6px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:13px; cursor:pointer; box-sizing:border-box;">Relevant to case</button>
+        <button type="button" data-clue="${clue.id}" data-choice="notrelevant" style="flex:1; padding:10px 6px; border-radius:4px; border:1px solid #2a323f; background:#0d1117; color:#e8ecf1; font-family:inherit; font-size:13px; cursor:pointer; box-sizing:border-box;">Not relevant</button>
+      </div>
+      <div data-reasoning-block="${clue.id}" style="display:none;">
+        <label for="reason-${clue.id}" style="display:block; font-size:12.5px; color:#8a94a6; margin-bottom:6px;">Why? (required before you can submit)</label>
+        <textarea id="reason-${clue.id}" rows="3" style="width:100%; background:#0d1117; border:1px solid #2a323f; color:#e8ecf1; font-family:inherit; font-size:13px; padding:8px; border-radius:4px; resize:vertical; margin-bottom:8px; box-sizing:border-box;"></textarea>
+        <button type="button" data-submit="${clue.id}" disabled style="width:100%; padding:10px; border-radius:4px; border:none; background:#2a323f; color:#8a94a6; font-family:inherit; font-size:12.5px; font-weight:bold; cursor:not-allowed; box-sizing:border-box;">Submit classification</button>
+      </div>
+      <div data-feedback="${clue.id}" aria-live="polite" style="font-size:13.5px; margin-top:8px; display:none; padding:8px; border-radius:4px; box-sizing:border-box;"></div>
+    </section>
+  `;
+}
+
+function renderTextCaseList(){
+  const container = document.getElementById('textCaseList');
+  container.innerHTML = orderedClues.map(buildTextCaseItemHtml).join('');
+  container.addEventListener('click', handleTextListClick);
+  container.addEventListener('input', handleTextListInput);
+}
+
+function updateTextSubmitEnabled(id, section){
+  const textarea = section.querySelector('textarea');
+  const btn = section.querySelector('[data-submit]');
+  const enabled = textPending[id]!==undefined && textarea.value.trim().length>0;
+  setSubmitButtonEnabledStyle(btn, enabled);
+}
+
+function handleTextListClick(e){
+  const narrateBtn = e.target.closest('[data-narrate]');
+  if(narrateBtn){
+    const clue = clueById(narrateBtn.dataset.narrate);
+    speakNarration(`${clue.narration} Is this relevant to the case?`, narrateBtn);
+    return;
+  }
+  const choiceBtn = e.target.closest('[data-choice]');
+  if(choiceBtn){
+    const id = choiceBtn.dataset.clue;
+    if(classification[id]) return; // already locked in
+    if(!textOpened.has(id)){ telemetry.markOpened(id); textOpened.add(id); }
+    const isRelevant = choiceBtn.dataset.choice === 'relevant';
+    textPending[id] = isRelevant;
+    const section = choiceBtn.closest('section');
+    setChoiceBtnState(section.querySelector('[data-choice="relevant"]'), isRelevant ? 'pending' : null);
+    setChoiceBtnState(section.querySelector('[data-choice="notrelevant"]'), !isRelevant ? 'pending' : null);
+    section.querySelector('[data-reasoning-block]').style.display = 'block';
+    updateTextSubmitEnabled(id, section);
+    return;
+  }
+  const submitBtn = e.target.closest('[data-submit]');
+  if(submitBtn){
+    const id = submitBtn.dataset.submit;
+    if(classification[id]) return;
+    if(textPending[id]===undefined) return;
+    const section = submitBtn.closest('section');
+    const textarea = section.querySelector('textarea');
+    const reasoning = textarea.value.trim();
+    if(!reasoning) return;
+    const clue = clueById(id);
+    const correct = gradeAndRecord(id, textPending[id], reasoning);
+    telemetry.markClosed(id);
+    section.querySelectorAll('button[data-choice]').forEach(b=>{ b.disabled = true; });
+    textarea.disabled = true;
+    submitBtn.style.display = 'none';
+    const relBtn = section.querySelector('[data-choice="relevant"]');
+    const notBtn = section.querySelector('[data-choice="notrelevant"]');
+    setChoiceBtnState(textPending[id] ? relBtn : notBtn, correct ? 'good' : 'bad');
+    const fb = section.querySelector('[data-feedback]');
+    fb.style.display = 'block';
+    fb.style.background = correct ? 'rgba(90,209,138,0.12)' : 'rgba(224,82,90,0.12)';
+    fb.style.border = '1px solid ' + (correct ? COLORS.good : COLORS.bad);
+    fb.style.color = correct ? COLORS.good : COLORS.bad;
+    fb.textContent = (correct ? '✓ Correct. ' : '✗ Not quite. ') + clue.explanation;
+    refreshLog();
+    refreshProgress();
+    maybeShowReport();
+  }
+}
+function handleTextListInput(e){
+  if(e.target.tagName === 'TEXTAREA'){
+    const section = e.target.closest('section');
+    const id = section.querySelector('[data-submit]').dataset.submit;
+    updateTextSubmitEnabled(id, section);
+  }
+}
+
+function setInvestigationMode(mode){
+  investigationMode = mode;
+  document.body.dataset.mode = mode;
+  const b3d = document.getElementById('modeBtn3d'), btxt = document.getElementById('modeBtnText');
+  b3d.setAttribute('aria-checked', mode==='3d');
+  btxt.setAttribute('aria-checked', mode==='text');
+  b3d.style.borderColor = mode==='3d' ? COLORS.accent : COLORS.panelLine;
+  b3d.style.background = mode==='3d' ? 'rgba(232,179,74,0.15)' : '#0d1117';
+  btxt.style.borderColor = mode==='text' ? COLORS.accent : COLORS.panelLine;
+  btxt.style.background = mode==='text' ? 'rgba(232,179,74,0.15)' : '#0d1117';
+}
+document.getElementById('modeBtn3d').addEventListener('click', ()=>setInvestigationMode('3d'));
+document.getElementById('modeBtnText').addEventListener('click', ()=>setInvestigationMode('text'));
+
+refreshLog(); refreshProgress();
+document.getElementById('progressTotal').textContent = CLUES.length;
+
+/* ============================================================
+   CASE REPORT
+   ============================================================ */
+const caseConclusion = { learned:'', nextSteps:'' };
+
+function maybeShowReport(){
+  if(Object.keys(classification).length === CLUES.length){
+    setTimeout(showConclusionPrompt, 700);
+  }
+}
+function showConclusionPrompt(){
+  openModal(document.getElementById('conclusionOverlay'), 'flex');
+}
+function updateConclusionSubmitEnabled(){
+  const a = document.getElementById('conclusionLearned').value.trim();
+  const b = document.getElementById('conclusionNextSteps').value.trim();
+  document.getElementById('btnSubmitConclusion').disabled = !(a.length>0 && b.length>0);
+}
+document.getElementById('conclusionLearned').addEventListener('input', updateConclusionSubmitEnabled);
+document.getElementById('conclusionNextSteps').addEventListener('input', updateConclusionSubmitEnabled);
+document.getElementById('btnSubmitConclusion').addEventListener('click', ()=>{
+  caseConclusion.learned = document.getElementById('conclusionLearned').value.trim();
+  caseConclusion.nextSteps = document.getElementById('conclusionNextSteps').value.trim();
+  telemetry.log('case', 'completed', { hasConclusion:true });
+  closeModal(document.getElementById('conclusionOverlay'));
+  showReport();
+});
+
+function fmtTime(ms){
+  const s = Math.round(ms/1000);
+  const m = Math.floor(s/60), r = s%60;
+  return `${m}m ${r}s`;
+}
+function showReport(){
+  const cov = telemetry.coverage();
+  const acc = telemetry.accuracy();
+  document.getElementById('reportSub').textContent = `Investigator: ${telemetry.investigator || 'Unnamed'}`;
+  document.getElementById('conclusionDisplay').innerHTML =
+    `<span style="color:#e8b34a; font-weight:bold; font-size:11.5px; letter-spacing:.05em; display:block; margin-bottom:3px;">WHAT THE EVIDENCE TAUGHT ME</span><div>${escapeHtml(caseConclusion.learned)}</div>` +
+    `<span style="color:#e8b34a; font-weight:bold; font-size:11.5px; letter-spacing:.05em; display:block; margin:10px 0 3px;">RECOMMENDED NEXT STEPS</span><div>${escapeHtml(caseConclusion.nextSteps)}</div>`;
+  document.getElementById('statCoverage').textContent = `${cov.visited}/${cov.total}`;
+  document.getElementById('statAccuracy').textContent = `${acc.correct}/${acc.total} (${acc.total? Math.round(acc.correct/acc.total*100):0}%)`;
+  document.getElementById('statTime').textContent = fmtTime(telemetry.totalTimeMs());
+
+  const missed = CLUES.filter(c=>{
+    const s = classification[c.id];
+    return !s || !s.correct;
+  });
+  const missedList = document.getElementById('missedList');
+  if(missed.length){
+    missedList.innerHTML = '<strong>Review needed:</strong><br>' + missed.map(m=>`#${m.number} ${m.name} — ${m.relevant?'was relevant':'was not relevant'}`).join('<br>');
+  } else {
+    missedList.innerHTML = '<span style="color:#5ad18a">All evidence correctly classified. Case ready for review.</span>';
+  }
+
+  // Case analysis: sensitivity (relevant items correctly caught) / specificity (irrelevant items correctly ruled out)
+  const relevantItems = CLUES.filter(c=>c.relevant);
+  const notRelevantItems = CLUES.filter(c=>!c.relevant);
+  const relevantCaught = relevantItems.filter(c=>classification[c.id] && classification[c.id].correct).length;
+  const notRelevantRuledOut = notRelevantItems.filter(c=>classification[c.id] && classification[c.id].correct).length;
+  document.getElementById('statSensitivity').textContent = `${relevantCaught}/${relevantItems.length}`;
+  document.getElementById('statSpecificity').textContent = `${notRelevantRuledOut}/${notRelevantItems.length}`;
+
+  const missedRelevant = relevantItems.filter(c=>!classification[c.id] || !classification[c.id].correct);
+  const falseFlags = notRelevantItems.filter(c=>classification[c.id] && !classification[c.id].correct);
+  let note = '';
+  if(missedRelevant.length===0 && falseFlags.length===0){
+    note = 'Strong case work: every genuine piece of evidence was caught, and nothing irrelevant made it into the case file.';
+  } else {
+    if(missedRelevant.length){
+      note += `You overlooked ${missedRelevant.length} item${missedRelevant.length>1?'s':''} that actually mattered to the case (${missedRelevant.map(m=>m.name).join(', ')}) — in real investigations, missed evidence like this can let a case fall apart later. `;
+    }
+    if(falseFlags.length){
+      note += `You also flagged ${falseFlags.length} item${falseFlags.length>1?'s':''} as relevant that were just scene clutter (${falseFlags.map(m=>m.name).join(', ')}) — treating too much as evidence can bury a case file in noise and waste lab resources.`;
+    }
+  }
+  document.getElementById('analysisNote').textContent = note;
+
+  // Reasoning review: student's stated reasoning next to the case notes' actual explanation
+  const reviewList = document.getElementById('reasoningReviewList');
+  reviewList.innerHTML = CLUES.map(c=>{
+    const s = classification[c.id];
+    if(!s) return '';
+    const mark = s.correct ? '✓' : '✗';
+    const color = s.correct ? '#5ad18a' : '#e0525a';
+    return `<div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #2a323f;">
+      <div style="color:${color}; font-weight:bold;">${mark} #${c.number} ${c.name}</div>
+      <div style="color:#e8ecf1; margin-top:3px;"><em>You said:</em> ${escapeHtml(s.reasoning)}</div>
+      <div style="color:#8a94a6; margin-top:3px;"><em>Case notes:</em> ${c.explanation}</div>
+    </div>`;
+  }).join('');
+
+  openModal(document.getElementById('reportOverlay'), 'flex');
+}
+document.getElementById('btnCloseReport').addEventListener('click', ()=>{
+  closeModal(document.getElementById('reportOverlay'));
+});
+
+function buildCsv(){
+  const rows = [['Marker','Name','Actual','Classification','Correct','Reasoning']];
+  CLUES.forEach(c=>{
+    const s = classification[c.id];
+    rows.push([
+      c.number, c.name, c.relevant?'Relevant':'Not relevant',
+      s ? (s.choice?'Relevant':'Not relevant') : 'Unanswered',
+      s ? (s.correct?'Yes':'No') : '',
+      s ? s.reasoning : ''
+    ]);
+  });
+  rows.push([]);
+  rows.push(['What the evidence taught me', caseConclusion.learned]);
+  rows.push(['Recommended next steps', caseConclusion.nextSteps]);
+  return rows.map(r=>r.map(v=>{
+    const str = String(v);
+    return /[",\n]/.test(str) ? '"'+str.replace(/"/g,'""')+'"' : str;
+  }).join(',')).join('\n');
+}
+document.getElementById('btnExportCsv').addEventListener('click', ()=>{
+  const csv = buildCsv();
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `case-marlowe-alley-${(telemetry.investigator||'report').replace(/\s+/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('btnCopySummary').addEventListener('click', async ()=>{
+  const acc = telemetry.accuracy();
+  const cov = telemetry.coverage();
+  const relevantItems = CLUES.filter(c=>c.relevant);
+  const notRelevantItems = CLUES.filter(c=>!c.relevant);
+  const relevantCaught = relevantItems.filter(c=>classification[c.id] && classification[c.id].correct).length;
+  const notRelevantRuledOut = notRelevantItems.filter(c=>classification[c.id] && classification[c.id].correct).length;
+  const summary = `CASE FILE: MARLOWE ALLEY\nInvestigator: ${telemetry.investigator||'Unnamed'}\nEvidence classified: ${cov.visited}/${cov.total}\nAccuracy: ${acc.correct}/${acc.total}\nRelevant evidence correctly identified: ${relevantCaught}/${relevantItems.length}\nNon-relevant items correctly ruled out: ${notRelevantRuledOut}/${notRelevantItems.length}\nTime on scene: ${fmtTime(telemetry.totalTimeMs())}\n\nWhat the evidence taught me:\n${caseConclusion.learned}\n\nRecommended next steps:\n${caseConclusion.nextSteps}`;
+  try{
+    await navigator.clipboard.writeText(summary);
+    document.getElementById('copyStatus').textContent = 'Copied to clipboard.';
+  }catch(err){
+    document.getElementById('copyStatus').textContent = 'Copy failed — select and copy manually.';
+  }
+});
+
+/* ============================================================
+   START SCREEN
+   ============================================================ */
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  telemetry.investigator = document.getElementById('nameInput').value.trim();
+  telemetry.sessionStart = performance.now();
+  document.getElementById('startScreen').style.display = 'none';
+
+  if(investigationMode === 'text'){
+    document.body.style.overflow = 'auto';
+    document.getElementById('stage').style.display = 'none';
+    document.getElementById('topbar').style.display = 'none';
+    document.getElementById('log').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    document.getElementById('evidencePanel').style.display = 'none';
+    document.getElementById('textModeScreen').style.display = 'block';
+    renderTextCaseList();
+    refreshProgress();
+  }
+});
+
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+const clock = new THREE.Clock();
+let elapsedTotal = 0;
+function animate(){
+  requestAnimationFrame(animate);
+  if(investigationMode !== '3d') return; // text mode doesn't need the 3D scene rendered
+  const dt = clock.getDelta();
+  elapsedTotal += dt;
+  const t = performance.now()*0.0004;
+  mist.rotation.y += dt*0.02;
+  updateRain(dt);
+  updateRipples(elapsedTotal);
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+document.getElementById('loading').style.display = 'none';
+
+} // end init
+</script>
+</body>
+</html>
