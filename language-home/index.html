@@ -247,6 +247,17 @@
   .lang-option:focus-within{outline:3px solid var(--azulejo-blue-dark); outline-offset:2px;}
 
   .room-tab .rt-native{font-size:10px; font-style:italic; opacity:.9;}
+
+  /* warning shown when the device has no installed voice for the chosen language */
+  #voice-notice{
+    position:absolute; top:112px; left:50%; transform:translateX(-50%);
+    background:rgba(156,61,34,.94); color:#fff;
+    padding:7px 16px; border-radius:999px;
+    font-size:12px; font-weight:600; line-height:1.4;
+    z-index:4; max-width:min(560px, 88%); text-align:center;
+    pointer-events:none;
+  }
+  #voice-notice[hidden]{display:none;}
 </style>
 </head>
 <body>
@@ -271,6 +282,7 @@
   </div>
 
   <div id="hint">Drag to look &middot; Click an object &middot; Arrow keys or 1&ndash;4 to change rooms</div>
+  <div id="voice-notice" role="status" hidden></div>
 
   <div id="room-tabs"></div>
 
@@ -325,7 +337,7 @@
     <div id="quiz-card">
       <button id="quiz-close">&times;</button>
       <div id="quiz-eyebrow">&iquest;C&oacute;mo se dice...?</div>
-      <div id="quiz-question">this in Spanish?</div>
+      <div id="quiz-question"></div>
       <div id="quiz-options"></div>
       <div id="quiz-feedback"></div>
     </div>
@@ -1604,16 +1616,35 @@
   /* ---------------- speech synthesis in the chosen language ----------------
      Speaks the full phrase INCLUDING the article (el/la, le/la, der/die/das...)
      since the article carries the noun's gender — an essential part of
-     learning the word. Voices load asynchronously in most browsers, so we
-     pick and cache the best voice for the chosen language whenever the list
-     (re)loads. */
+     learning the word.
+
+     Reliability rules, each covering a real failure mode:
+     1. A word is NEVER spoken through a voice of the wrong language. If no
+        voice of the chosen language is installed, the utterance still asks
+        for the right language and a visible notice warns that audio may be
+        mispronounced, so mismatched audio is never silent or mysterious.
+     2. Once a narrator of the right language has been chosen, it is locked
+        for the whole session. Browsers fire voiceschanged as they lazily
+        load voices, and re-picking on every event audibly changed the
+        narrator mid-session.
+     3. speak() is never issued in the same tick as cancel(). Chrome drops
+        utterances queued that way, which meant a fast wrong-then-right
+        answer could leave the WRONG word as the last audio heard.
+     4. A reference to the current utterance is kept, because Chrome can
+        garbage-collect it mid-playback and cut the audio off. */
   var cachedVoice = null;
+  var voiceLocked = false;
+  var currentUtterance = null;
+
+  function voiceMatchesLang(v){
+    if(!v || !v.lang || !LANG) return false;
+    return v.lang.toLowerCase().replace('_','-').indexOf(LANG.speech.slice(0,2).toLowerCase()) === 0;
+  }
 
   function scoreVoice(v){
-    if(!LANG || !v.lang) return -1;
+    if(!voiceMatchesLang(v)) return -1;
     var want = LANG.speech.toLowerCase();
     var lang = v.lang.toLowerCase().replace('_','-');
-    if(lang.indexOf(want.slice(0,2)) !== 0) return -1;   // wrong language entirely
     var s = 1;
     if(lang === want) s += 3;                            // preferred regional variant
     if((v.name||'').toLowerCase().indexOf('google') !== -1) s += 2;  // typically higher quality
@@ -1622,7 +1653,8 @@
   }
 
   function pickVoice(){
-    if(!('speechSynthesis' in window)) return;
+    if(!('speechSynthesis' in window) || !LANG) return;
+    if(voiceLocked && voiceMatchesLang(cachedVoice)) return;  // narrator stays stable
     var voices = window.speechSynthesis.getVoices();
     var best = null, bestScore = -1;
     voices.forEach(function(v){
@@ -1630,6 +1662,20 @@
       if(s > bestScore){ bestScore = s; best = v; }
     });
     cachedVoice = best;
+    if(best) voiceLocked = true;
+    updateVoiceNotice();
+  }
+
+  function updateVoiceNotice(){
+    var el = document.getElementById('voice-notice');
+    if(!el || !LANG) return;
+    var missing = ('speechSynthesis' in window) && !voiceMatchesLang(cachedVoice);
+    if(missing){
+      el.textContent = 'No ' + LANG.label + ' voice is installed on this device, so audio may be mispronounced or silent. The written words are still correct.';
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
   }
 
   if('speechSynthesis' in window){
@@ -1638,15 +1684,21 @@
 
   function speakWord(text){
     if(!('speechSynthesis' in window) || !LANG) return;
-    if(!cachedVoice) pickVoice();
+    if(!voiceMatchesLang(cachedVoice)) pickVoice();
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = (cachedVoice && cachedVoice.lang) || LANG.speech;
-    if(cachedVoice) u.voice = cachedVoice;
+    u.lang = LANG.speech;
+    if(voiceMatchesLang(cachedVoice)) u.voice = cachedVoice;
     u.rate = 0.85;    // slightly slow for learners
     u.pitch = 1.0;
     u.volume = 1.0;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    currentUtterance = u;
+    var synth = window.speechSynthesis;
+    if(synth.speaking || synth.pending){
+      synth.cancel();
+      setTimeout(function(){ if(currentUtterance === u) synth.speak(u); }, 60);
+    } else {
+      synth.speak(u);
+    }
   }
 
   function openQuiz(id){
@@ -1776,8 +1828,8 @@
       objectType:'Activity',
       id: XAPI_CONFIG.activityBase,
       definition:{
-        name:{'en-US':'La Casa Interactiva \u2014 Spanish Home Vocabulary'},
-        description:{'en-US':'Identify 28 household items in Spanish across four rooms of a 3D house.'},
+        name:{'en-US':'The Language House \u2014 ' + (LANG ? LANG.label : 'Household') + ' Vocabulary'},
+        description:{'en-US':'Identify ' + ITEM_DEFS.length + ' household items' + (LANG ? ' in ' + LANG.label : '') + ' across four rooms of a 3D house.'},
         type:'http://adlnet.gov/expapi/activities/simulation'
       }
     };
@@ -1883,6 +1935,9 @@
     // the language radios are required, so a choice is guaranteed here
     applyLanguage(document.querySelector('input[name="learn-language"]:checked').value);
     pickVoice();
+    // voices load lazily in most browsers: check again shortly after start so
+    // the "no voice installed" notice is accurate rather than a false alarm
+    setTimeout(function(){ pickVoice(); updateVoiceNotice(); }, 700);
     document.getElementById('quiz-eyebrow').textContent = LANG.eyebrow;
     document.querySelector('#title-block h1').textContent = LANG.title;
     document.title = 'The Language House - ' + LANG.title;
