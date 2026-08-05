@@ -244,7 +244,7 @@
     <div style="display:flex; align-items:center; gap:10px;">
       <div id="progress-wrap">
         <div id="progress-bar"><div id="progress-fill"></div></div>
-        <span id="progress-text">0 / 28</span>
+        <span id="progress-text">0 / 32</span>
       </div>
       <button id="vr-btn">Enter VR</button>
     </div>
@@ -278,7 +278,7 @@
     <div class="card">
       <span class="eyebrow">&iexcl;Enhorabuena!</span>
       <h2>You've furnished your Spanish vocabulary</h2>
-      <p id="win-summary">All 28 items across the kitchen, living room, bedroom, and bathroom are learned. Well done!</p>
+      <p id="win-summary">All 32 items across the kitchen, living room, bedroom, and bathroom are learned. Well done!</p>
       <div id="results-box" style="background:#fff;border:2px solid var(--azulejo-blue-dark);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:12px;white-space:pre-wrap;margin-bottom:12px;max-height:120px;overflow:auto;"></div>
       <button class="primary-btn" id="download-csv-btn" style="margin-bottom:8px;">Download results (CSV)</button>
       <button class="primary-btn" id="copy-results-btn" style="background:var(--azulejo-blue);margin-bottom:8px;">Copy results summary</button>
@@ -320,11 +320,14 @@
   var ROOM_SIZE = 10;      // each room is ROOM_SIZE x ROOM_SIZE
   var WALL_H = 3.4;
 
+  // camTheta aims each room's default camera into that room's two REAL walls,
+  // so furniture placed against them is the far backdrop instead of blocking
+  // the view, and fixtures never read as sitting in the neighbouring room
   var ROOM_DEFS = [
-    { id:'kitchen',  name:'Kitchen',      es:'La Cocina',      cx:-ROOM_SIZE/2, cz:-ROOM_SIZE/2, floor:0xC79A5C, wall:0xE7D3AE, tile:true  },
-    { id:'living',   name:'Living Room',  es:'La Sala',        cx: ROOM_SIZE/2, cz:-ROOM_SIZE/2, floor:0x8B5E3C, wall:0xD9C6A3, tile:false },
-    { id:'bedroom',  name:'Bedroom',      es:'El Dormitorio',  cx:-ROOM_SIZE/2, cz: ROOM_SIZE/2, floor:0x9C6B45, wall:0xE0CDAE, tile:false, seeThru:true },
-    { id:'bathroom', name:'Bathroom',     es:'El Ba\u00f1o',   cx: ROOM_SIZE/2, cz: ROOM_SIZE/2, floor:0xD7E4E8, wall:0xEFF4F5, tile:true , seeThru:true }
+    { id:'kitchen',  name:'Kitchen',      es:'La Cocina',      cx:-ROOM_SIZE/2, cz:-ROOM_SIZE/2, floor:0xC79A5C, wall:0xE7D3AE, tile:true , camTheta: 0.7 },
+    { id:'living',   name:'Living Room',  es:'La Sala',        cx: ROOM_SIZE/2, cz:-ROOM_SIZE/2, floor:0x8B5E3C, wall:0xD9C6A3, tile:false, camTheta: 0.7 },
+    { id:'bedroom',  name:'Bedroom',      es:'El Dormitorio',  cx:-ROOM_SIZE/2, cz: ROOM_SIZE/2, floor:0x9C6B45, wall:0xE0CDAE, tile:false, seeThru:true, camTheta: 2.44 },
+    { id:'bathroom', name:'Bathroom',     es:'El Ba\u00f1o',   cx: ROOM_SIZE/2, cz: ROOM_SIZE/2, floor:0xD7E4E8, wall:0xEFF4F5, tile:true , seeThru:true, camTheta:-2.44 }
   ];
 
   // local coordinates are offsets from room center, range roughly -4..4
@@ -336,7 +339,8 @@
     { room:'kitchen', id:'microondas',   en:'microwave',    es:'el microondas',    type:'microwave', x: 2.6, z:-4.35, ry:0 },
     { room:'kitchen', id:'mesa',         en:'table',        es:'la mesa',          type:'table',     x: 1.2, z: 1.6, ry:0 },
     { room:'kitchen', id:'silla',        en:'chair',        es:'la silla',         type:'chair',     x: 1.2, z: 3.0, ry:0 },
-    { room:'kitchen', id:'alacena',      en:'cabinet',      es:'la alacena',       type:'cabinet',   x:-4.35, z: 0.5, ry:1.5708 },
+    { room:'kitchen', id:'alacena',      en:'cabinet',      es:'la alacena',       type:'cabinet',   x:-4.3, z: 0.5, ry:1.5708 },
+    { room:'kitchen', id:'cafetera',     en:'coffee maker', es:'la cafetera',      type:'coffeemaker', x: 1.55, z:-4.35, ry:0 },
 
     // ---- Living room ----
     { room:'living', id:'sofa',          en:'sofa',         es:'el sof\u00e1',      type:'sofa',       x:-0.6, z: 2.6, ry:3.14159 },
@@ -346,27 +350,32 @@
     { room:'living', id:'estanteria',    en:'bookshelf',    es:'la estanter\u00eda',type:'bookshelf',  x: 3.6, z:-2.4, ry:-1.57 },
     { room:'living', id:'alfombra',      en:'rug',          es:'la alfombra',      type:'rug',        x:-0.6, z: 0.8, ry:0 },
     { room:'living', id:'sillon',        en:'armchair',     es:'el sill\u00f3n',    type:'armchair',   x:-3.4, z: 2.2, ry:0.8 },
+    { room:'living', id:'planta',        en:'plant',        es:'la planta',        type:'plant',      x:-3.8, z:-4.0, ry:0 },
 
-    // ---- Bedroom ----
-    { room:'bedroom', id:'cama',         en:'bed',          es:'la cama',          type:'bed',        x:-0.6, z: 2.6, ry:0 },
-    { room:'bedroom', id:'clóset',       en:'closet',       es:'el clóset',        type:'closet',     x: 3.4, z:-2.0, ry:-1.57 },
-    { room:'bedroom', id:'cómoda',       en:'dresser',      es:'la cómoda',        type:'dresser',    x: 3.4, z: 2.6, ry:-1.57 },
-    { room:'bedroom', id:'espejo',       en:'mirror',       es:'el espejo',        type:'mirror',     x:-3.6, z: 2.6, ry:1.57 },
-    { room:'bedroom', id:'mesita_noche', en:'nightstand',   es:'la mesita de noche', type:'nightstand', x:-2.6, z: 1.3, ry:0 },
-    { room:'bedroom', id:'almohada',     en:'pillow',       es:'la almohada',      type:'pillow',     x:-3.4, z:-2.8, ry:0.4 },
-    { room:'bedroom', id:'despertador',  en:'alarm clock',  es:'el despertador',   type:'clock',      x:-2.6, z: 0.6, ry:0 },
+    // ---- Bedroom (furniture kept against the two real walls: west x=-5, south z=+5) ----
+    { room:'bedroom', id:'cama',         en:'bed',          es:'la cama',          type:'bed',        x:-0.6, z: 2.6, ry:3.14159 },
+    { room:'bedroom', id:'clóset',       en:'closet',       es:'el clóset',        type:'closet',     x: 2.6, z: 4.3, ry:3.14159 },
+    { room:'bedroom', id:'cómoda',       en:'dresser',      es:'la cómoda',        type:'dresser',    x:-4.4, z:-0.2, ry:1.57 },
+    { room:'bedroom', id:'espejo',       en:'mirror',       es:'el espejo',        type:'mirror',     x:-4.55, z: 1.4, ry:1.57 },
+    { room:'bedroom', id:'mesita_noche', en:'nightstand',   es:'la mesita de noche', type:'nightstand', x:-2.1, z: 3.5, ry:0 },
+    { room:'bedroom', id:'almohada',     en:'pillow',       es:'la almohada',      type:'pillow',     x:-0.6, z: 3.35, ry:0.06 },
+    { room:'bedroom', id:'manta',        en:'blanket',      es:'la manta',         type:'blanket',    x:-0.6, z: 2.15, ry:0 },
+    { room:'bedroom', id:'despertador',  en:'alarm clock',  es:'el despertador',   type:'clock',      x:-2.1, z: 3.55, ry:0.3 },
 
-    // ---- Bathroom ----
+    // ---- Bathroom (fixtures clustered along the two real walls: east x=+5, south z=+5) ----
     { room:'bathroom', id:'inodoro',     en:'toilet',       es:'el inodoro',       type:'toilet',     x: 3.2, z:-3.0, ry:-1.57 },
+    { room:'bathroom', id:'papel',       en:'toilet paper', es:'el papel higi\u00e9nico', type:'paper', x: 2.35, z:-3.05, ry:0 },
     { room:'bathroom', id:'lavabo',      en:'bathroom sink',es:'el lavabo',        type:'sink_b',     x: 3.4, z:-0.4, ry:-1.57 },
-    { room:'bathroom', id:'banera',      en:'bathtub',      es:'la ba\u00f1era',   type:'bathtub',    x: 0.6, z: 3.0, ry:0 },
-    { room:'bathroom', id:'ducha',       en:'shower',       es:'la ducha',         type:'shower',     x:-3.4, z: 2.6, ry:0 },
-    { room:'bathroom', id:'toalla',      en:'towel',        es:'la toalla',        type:'towel',      x:-3.6, z:-0.4, ry:0 },
-    { room:'bathroom', id:'papel',       en:'toilet paper', es:'el papel higi\u00e9nico', type:'paper', x: 1.8, z:-3.4, ry:0 },
-    { room:'bathroom', id:'cortina',     en:'shower curtain', es:'la cortina de ba\u00f1o', type:'curtain', x:-3.4, z: 3.2, ry:0 }
+    { room:'bathroom', id:'toalla',      en:'towel',        es:'la toalla',        type:'towel',      x: 3.55, z: 1.2, ry:-1.57 },
+    { room:'bathroom', id:'banera',      en:'bathtub',      es:'la ba\u00f1era',   type:'bathtub',    x: 0.5, z: 3.5, ry:0 },
+    { room:'bathroom', id:'ducha',       en:'shower',       es:'la ducha',         type:'shower',     x: 3.35, z: 3.5, ry:0 },
+    { room:'bathroom', id:'cortina',     en:'shower curtain', es:'la cortina de ba\u00f1o', type:'curtain', x: 3.35, z: 2.8, ry:0 },
+    { room:'bathroom', id:'lavadora',    en:'washing machine', es:'la lavadora',   type:'washer',     x:-2.2, z: 4.25, ry:3.14159 }
   ];
 
   var ALL_ES_WORDS = ITEM_DEFS.map(function(d){ return d.es; });
+  var ES_TO_EN = {};
+  ITEM_DEFS.forEach(function(d){ ES_TO_EN[d.es] = d.en; });
 
   /* ======================================================================
      THREE.JS SETUP
@@ -386,7 +395,7 @@
   if('outputColorSpace' in renderer){ renderer.outputColorSpace = THREE.SRGBColorSpace; }
   else if('outputEncoding' in renderer){ renderer.outputEncoding = THREE.sRGBEncoding; }
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.85;
+  renderer.toneMappingExposure = 0.92;
   holder.appendChild(renderer.domElement);
 
   /* ---------------- simple sky dome (robust, no PMREM/shader risk) ---------------- */
@@ -405,8 +414,8 @@
   })();
 
   // lights
-  scene.add(new THREE.AmbientLight(0xFFF4E4, 0.18));
-  scene.add(new THREE.HemisphereLight(0xDCEBF2, 0x6b5a45, 0.45));
+  scene.add(new THREE.AmbientLight(0xFFF4E4, 0.22));
+  scene.add(new THREE.HemisphereLight(0xDCEBF2, 0x6b5a45, 0.47));
   var sun = new THREE.DirectionalLight(0xFFF1DA, 1.0);
   sun.position.set(9, 15, 7);
   sun.castShadow = true;
@@ -431,7 +440,7 @@
   // tuned warm/cool per room so the four spaces read as distinct moods
   var ROOM_LIGHT_COLOR = { kitchen:0xFFEBC7, living:0xFFCF9E, bedroom:0xCBD9EE, bathroom:0xD8EEF2 };
   ROOM_DEFS.forEach(function(r){
-    var roomLight = new THREE.PointLight(ROOM_LIGHT_COLOR[r.id] || 0xFFEBC7, 0.9, 0, 1);
+    var roomLight = new THREE.PointLight(ROOM_LIGHT_COLOR[r.id] || 0xFFEBC7, 0.95, 0, 1);
     roomLight.position.set(r.cx, 2.8, r.cz);
     scene.add(roomLight);
   });
@@ -521,8 +530,23 @@
   bedroomFloorTex.repeat.set(3,3);
   var rugTex = makeAzulejoTexture('#C1502E', '#F3E9D6');
   rugTex.repeat.set(2,2);
-  var curtainTex = makeAzulejoTexture('#2B6E8E', '#F3E9D6');
-  curtainTex.repeat.set(2,3);
+  // striped fabric for the shower curtain — intentionally not an azulejo motif,
+  // so the curtain reads as cloth rather than another tiled surface
+  var curtainFabricTex = (function(){
+    var S = 512;
+    var c = document.createElement('canvas'); c.width = c.height = S;
+    var g = c.getContext('2d');
+    g.fillStyle = '#F6EFE0'; g.fillRect(0,0,S,S);
+    g.fillStyle = '#C1502E';
+    for(var x=24; x<S; x+=96){ g.fillRect(x,0,16,S); }
+    g.fillStyle = '#2B6E8E';
+    for(var x2=66; x2<S; x2+=96){ g.fillRect(x2,0,7,S); }
+    addNoise(g, S, S, 7);
+    var tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    if('colorSpace' in tex){ tex.colorSpace = THREE.SRGBColorSpace; } else { tex.encoding = THREE.sRGBEncoding; }
+    return tex;
+  })();
 
   var sunbeamTex = (function(){
     var S = 256;
@@ -713,16 +737,36 @@
       return g;
     },
     cabinet: function(){
+      // open-front hutch with visible crockery so it cannot be mistaken for the
+      // (white, taller, handled) fridge
       var g = new THREE.Group();
-      // tall pantry cabinet, matches fridge height to bookend the run
-      g.add(put(box(0.7,1.9,0.6,MAT.wood),0,0.95,0));
-      // two stacked doors
-      g.add(put(box(0.6,0.9,0.02,MAT.woodLt),0,0.55,0.31));
-      g.add(put(box(0.6,0.8,0.02,MAT.woodLt),0,1.42,0.31));
-      g.add(put(box(0.03,0.2,0.04,MAT.darkSteel),0.22,0.95,0.32));
-      g.add(put(box(0.03,0.2,0.04,MAT.darkSteel),0.22,1.15,0.32));
+      // closed base cupboard with two doors
+      g.add(put(box(1.1,0.8,0.5,MAT.wood),0,0.4,0));
+      g.add(put(box(0.48,0.62,0.02,MAT.woodLt),-0.27,0.42,0.26));
+      g.add(put(box(0.48,0.62,0.02,MAT.woodLt), 0.27,0.42,0.26));
+      g.add(put(sph(0.022,MAT.darkSteel),-0.06,0.42,0.28));
+      g.add(put(sph(0.022,MAT.darkSteel), 0.06,0.42,0.28));
+      // counter lip
+      g.add(put(box(1.16,0.05,0.56,MAT.cream),0,0.83,0));
+      // open upper hutch: back panel, sides, two shelves
+      g.add(put(box(1.1,1.15,0.06,MAT.wood),0,1.45,-0.2));
+      g.add(put(box(0.06,1.15,0.4,MAT.wood),-0.52,1.45,-0.03));
+      g.add(put(box(0.06,1.15,0.4,MAT.wood), 0.52,1.45,-0.03));
+      g.add(put(box(1.1,0.05,0.4,MAT.wood),0,2.02,-0.03));
+      g.add(put(box(1.0,0.035,0.36,MAT.woodLt),0,1.28,-0.03));
+      g.add(put(box(1.0,0.035,0.36,MAT.woodLt),0,1.66,-0.03));
+      // colourful plates and jars on the shelves
+      var dishCols = [0x2B6E8E, 0xC1502E, 0xE3B04B, 0x74895B];
+      for(var di=0; di<4; di++){
+        var dm = new THREE.MeshStandardMaterial({ color:dishCols[di], roughness:0.5 });
+        g.add(put(cyl(0.09,0.09,0.03,dm,14), -0.36+di*0.24, 1.32, -0.03));
+      }
+      for(var ji=0; ji<3; ji++){
+        var jm = new THREE.MeshStandardMaterial({ color:dishCols[(ji+1)%4], roughness:0.45 });
+        g.add(put(cyl(0.055,0.07,0.16,jm,12), -0.28+ji*0.28, 1.77, -0.03));
+      }
       // terracotta trim signature line
-      g.add(put(box(0.7,0.03,0.02,MAT.terracotta),0,1.0,0.31));
+      g.add(put(box(1.1,0.03,0.02,MAT.terracotta),0,0.86,0.27));
       return g;
     },
 
@@ -784,13 +828,24 @@
     },
 
     bed: function(){
+      // (the terracotta blanket that used to be part of the bed is now its own
+      // interactive vocabulary item, 'la manta')
       var g = new THREE.Group();
       g.add(put(box(1.9,0.35,2.4,MAT.wood),0,0.18,0));
       g.add(put(box(1.8,0.25,2.3,MAT.cream),0,0.47,0));
       g.add(put(box(1.9,0.7,0.12,MAT.wood),0,0.7,-1.2));
       g.add(put(box(0.8,0.15,0.5,new THREE.MeshStandardMaterial({color:0xFFFFFF,roughness:0.9})),-0.5,0.68,-0.95));
       g.add(put(box(0.8,0.15,0.5,new THREE.MeshStandardMaterial({color:0xFFFFFF,roughness:0.9})),0.5,0.68,-0.95));
-      g.add(put(box(1.85,0.1,1.0,MAT.terracotta),0,0.63,0.6));
+      return g;
+    },
+    blanket: function(){
+      // folded blanket lying across the foot of the bed, with visible fold lines
+      var g = new THREE.Group();
+      g.add(put(box(1.85,0.1,1.0,MAT.terracotta),0,0.63,0));
+      g.add(put(box(1.85,0.02,0.08,new THREE.MeshStandardMaterial({ color:0x9C3D22, roughness:0.85 })),0,0.69,-0.28));
+      g.add(put(box(1.85,0.02,0.08,new THREE.MeshStandardMaterial({ color:0x9C3D22, roughness:0.85 })),0,0.69,0.22));
+      // draped edge hanging over the side of the mattress
+      g.add(put(box(0.08,0.35,1.0,MAT.terracotta),0.96,0.48,0));
       return g;
     },
     closet: function(){
@@ -821,15 +876,18 @@
       return g;
     },
     pillow: function(){
+      // rests on the mattress in front of the white sleeping pillows
       var g = new THREE.Group();
-      g.add(put(box(0.5,0.16,0.35,MAT.blue),0,0.65,0));
+      g.add(put(box(0.55,0.16,0.36,MAT.blue),0,0.68,0));
+      g.add(put(box(0.45,0.05,0.26,new THREE.MeshStandardMaterial({ color:0x1D4E66, roughness:0.8 })),0,0.77,0));
       return g;
     },
     clock: function(){
       var g = new THREE.Group();
-      g.add(put(box(0.22,0.16,0.12,MAT.terracotta),0,0.6,0));
-      g.add(put(cyl(0.02,0.02,0.05,MAT.black),-0.08,0.68,0.06));
-      g.add(put(cyl(0.02,0.02,0.05,MAT.black),0.08,0.68,0.06));
+      // sits on top of the nightstand (nightstand top is y=0.555)
+      g.add(put(box(0.22,0.16,0.12,MAT.terracotta),0,0.64,0));
+      g.add(put(cyl(0.02,0.02,0.05,MAT.black),-0.08,0.735,0.06));
+      g.add(put(cyl(0.02,0.02,0.05,MAT.black),0.08,0.735,0.06));
       return g;
     },
 
@@ -854,10 +912,25 @@
       return g;
     },
     shower: function(){
+      // walk-in corner shower: raised tray, glass side panels, riser pipe and
+      // angled head, so it reads as a shower stall rather than a floating pole
       var g = new THREE.Group();
-      g.add(put(cyl(0.03,0.03,1.6,MAT.steel),0,1.9,0));
-      g.add(put(sph(0.14,MAT.steel),0,2.65,0));
-      g.add(put(box(1.0,0.05,1.0,MAT.glass),0,0.03,0));
+      g.add(put(box(1.15,0.14,1.15,MAT.porcelain),0,0.07,0));
+      g.add(put(box(1.0,0.03,1.0,new THREE.MeshStandardMaterial({ color:0xD7E4E8, roughness:0.4 })),0,0.15,0));
+      g.add(put(cyl(0.03,0.03,0.02,MAT.darkSteel,12),0,0.165,0));   // drain
+      // glass panels on the two wall sides
+      g.add(put(box(0.05,2.0,1.15,MAT.glass),0.55,1.14,0));
+      g.add(put(box(1.15,2.0,0.05,MAT.glass),0,1.14,0.55));
+      // riser pipe up the back corner + angled arm + head
+      g.add(put(cyl(0.025,0.025,1.9,MAT.steel),0.42,1.1,0.42));
+      var arm = cyl(0.02,0.02,0.4,MAT.steel,10);
+      arm.rotation.set(0.6,0,0.6);
+      arm.position.set(0.3,2.05,0.3);
+      g.add(arm);
+      g.add(put(sph(0.13,MAT.steel),0.16,2.0,0.16));
+      g.add(put(cyl(0.09,0.13,0.06,MAT.darkSteel,14),0.16,1.93,0.16));
+      // taps on the back glass
+      g.add(put(sph(0.045,MAT.steel),0.42,1.05,0.3));
       return g;
     },
     towel: function(){
@@ -867,17 +940,89 @@
       return g;
     },
     paper: function(){
+      // holder on a short post at arm height beside the toilet
       var g = new THREE.Group();
-      g.add(put(cyl(0.11,0.11,0.12,MAT.porcelain,20),0,0.9,0));
-      g.add(put(cyl(0.02,0.02,0.2,MAT.steel,8),0,0.9,0.12));
+      g.add(put(cyl(0.025,0.03,0.66,MAT.steel,10),0,0.33,0));
+      g.add(put(box(0.06,0.06,0.18,MAT.steel),0,0.66,0.06));
+      var roll = cyl(0.1,0.1,0.14,MAT.porcelain,20);
+      roll.rotation.x = Math.PI/2;
+      roll.position.set(0,0.66,0.15);
+      g.add(roll);
+      // loose sheet hanging off the roll
+      g.add(put(box(0.13,0.16,0.01,new THREE.MeshStandardMaterial({ color:0xFFFFFF, roughness:0.9 })),0,0.55,0.24));
       return g;
     },
     curtain: function(){
+      // fabric curtain: rod with rings and a striped cloth with hanging folds —
+      // deliberately NOT the azulejo pattern so it can't be read as a wall/floor panel
       var g = new THREE.Group();
-      g.add(put(cyl(0.02,0.02,1.0,MAT.steel),0,2.1,0));
-      var m = new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.9), new THREE.MeshStandardMaterial({ map: curtainTex, roughness:0.9, side: THREE.DoubleSide }));
-      m.position.set(0,1.15,0);
+      var rod = cyl(0.022,0.022,1.25,MAT.steel,10);
+      rod.rotation.z = Math.PI/2;
+      rod.position.set(0,2.05,0);
+      g.add(rod);
+      for(var ri=0; ri<7; ri++){
+        g.add(put(sph(0.032,MAT.darkSteel), -0.51+ri*0.17, 2.02, 0));
+      }
+      var geo = new THREE.PlaneGeometry(1.1,1.8,28,1);
+      var pos = geo.attributes.position;
+      for(var vi=0; vi<pos.count; vi++){
+        var vx = pos.getX(vi);
+        pos.setZ(vi, Math.sin(vx*18)*0.05);
+      }
+      geo.computeVertexNormals();
+      var m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: curtainFabricTex, roughness:0.92, side: THREE.DoubleSide }));
+      m.castShadow = true;
+      m.position.set(0,1.08,0);
       g.add(m);
+      return g;
+    },
+    washer: function(){
+      var g = new THREE.Group();
+      g.add(put(box(0.8,0.95,0.68,MAT.white),0,0.5,0));
+      // round front-loader door: outer ring + dark glass
+      var ring = cyl(0.27,0.27,0.04,MAT.steel,24);
+      ring.rotation.x = Math.PI/2;
+      ring.position.set(0,0.48,0.35);
+      g.add(ring);
+      var glassDoor = cyl(0.2,0.2,0.05,MAT.darkSteel,24);
+      glassDoor.rotation.x = Math.PI/2;
+      glassDoor.position.set(0,0.48,0.36);
+      g.add(glassDoor);
+      // control strip with dial + buttons
+      g.add(put(box(0.8,0.14,0.03,MAT.steel),0,0.9,0.345));
+      var dial = cyl(0.045,0.045,0.03,MAT.darkSteel,14);
+      dial.rotation.x = Math.PI/2;
+      dial.position.set(-0.26,0.9,0.365);
+      g.add(dial);
+      g.add(put(box(0.16,0.05,0.01,MAT.black),0.18,0.9,0.365));
+      // detergent bottle on top for storytelling
+      g.add(put(box(0.1,0.16,0.07,MAT.blue),0.24,1.06,0.05));
+      return g;
+    },
+    coffeemaker: function(){
+      // drip coffee maker standing on the kitchen counter (counter top is y=0.85)
+      var g = new THREE.Group();
+      g.add(put(box(0.3,0.05,0.26,MAT.black),0,0.88,0));                 // base
+      g.add(put(box(0.14,0.42,0.24,MAT.black),0,1.1,-0.08));             // tower
+      g.add(put(box(0.3,0.06,0.26,MAT.black),0,1.32,0));                 // head
+      var carafe = cyl(0.09,0.11,0.18,MAT.glass,14);
+      carafe.position.set(0,1.0,0.04);
+      g.add(carafe);
+      g.add(put(box(0.02,0.1,0.04,MAT.darkSteel),0.12,1.0,0.04));        // handle
+      g.add(put(cyl(0.012,0.012,0.02,new THREE.MeshStandardMaterial({ color:0x3AE05A, emissive:0x3AE05A, emissiveIntensity:0.8 }),8),-0.1,0.91,0.13)); // power light
+      return g;
+    },
+    plant: function(){
+      var g = new THREE.Group();
+      g.add(put(cyl(0.16,0.12,0.28,MAT.terracotta,14),0,0.14,0));        // pot
+      g.add(put(cyl(0.14,0.14,0.02,new THREE.MeshStandardMaterial({ color:0x4a3626, roughness:1 }),14),0,0.28,0));  // soil
+      g.add(put(cyl(0.025,0.03,0.5,new THREE.MeshStandardMaterial({ color:0x5a6b3f, roughness:0.9 }),8),0,0.5,0)); // stem
+      var leafMat = new THREE.MeshStandardMaterial({ color:0x4C7A4C, roughness:0.8 });
+      var leafMat2 = new THREE.MeshStandardMaterial({ color:0x74895B, roughness:0.8 });
+      g.add(put(sph(0.24,leafMat),0,0.85,0));
+      g.add(put(sph(0.17,leafMat2),0.18,0.7,0.08));
+      g.add(put(sph(0.16,leafMat2),-0.17,0.72,-0.06));
+      g.add(put(sph(0.14,leafMat),0.02,1.02,-0.08));
       return g;
     }
   };
@@ -1052,19 +1197,19 @@
 
     // bedroom: slippers by the bed + a book on the nightstand
     var slipMat = new THREE.MeshStandardMaterial({ color:0x9C6B45, roughness:0.85 });
-    houseGroup.add(put(box(0.14,0.06,0.32, slipMat), b.cx+0.1, 0.03, b.cz+1.55));
-    houseGroup.add(put(box(0.14,0.06,0.32, slipMat), b.cx+0.32, 0.03, b.cz+1.55));
+    houseGroup.add(put(box(0.14,0.06,0.32, slipMat), b.cx+0.1, 0.03, b.cz+1.5));
+    houseGroup.add(put(box(0.14,0.06,0.32, slipMat), b.cx+0.32, 0.03, b.cz+1.5));
     var bookMat = new THREE.MeshStandardMaterial({ color:0x74895B, roughness:0.6 });
-    houseGroup.add(put(box(0.22,0.04,0.16, bookMat), b.cx-2.6, 0.58, b.cz+1.0));
+    houseGroup.add(put(box(0.22,0.04,0.16, bookMat), b.cx-1.95, 0.58, b.cz+3.35));
     // small bedside lamp: warm practical light against the room's cool moonlight tone
     var nightLampGrp = new THREE.Group();
     nightLampGrp.add(put(cyl(0.02,0.02,0.22, MAT.darkSteel), 0,0.71,0));
     var nightShadeMat = new THREE.MeshStandardMaterial({ color:0xF3E9D6, emissive:0xFFD9A0, emissiveIntensity:0.5 });
     nightLampGrp.add(put(cyl(0.11,0.07,0.15, nightShadeMat, 16), 0,0.86,0));
-    nightLampGrp.position.set(b.cx-2.75, 0, b.cz+1.15);
+    nightLampGrp.position.set(b.cx-2.3, 0, b.cz+3.7);
     houseGroup.add(nightLampGrp);
     var nightLampLight = new THREE.PointLight(0xFFD9A0, 0.5, 3, 2);
-    nightLampLight.position.set(b.cx-2.75, 0.9, b.cz+1.15);
+    nightLampLight.position.set(b.cx-2.3, 0.9, b.cz+3.7);
     scene.add(nightLampLight);
 
     // bathroom: soap dish + a small rubber duck by the tub
@@ -1074,7 +1219,7 @@
     var duckGrp = new THREE.Group();
     duckGrp.add(put(sph(0.09, duckMat), 0,0,0));
     duckGrp.add(put(sph(0.05, duckMat), 0.09,0.06,0));
-    duckGrp.position.set(ba.cx+0.9, 0.32, ba.cz+2.75);
+    duckGrp.position.set(ba.cx+0.8, 0.32, ba.cz+3.25);
     houseGroup.add(duckGrp);
   })();
 
@@ -1109,7 +1254,7 @@
     var clockG = itemState['despertador'].group;
     var clockGlowMat = new THREE.MeshStandardMaterial({ color:0x1a0505, emissive:0xE3402A, emissiveIntensity:1.0 });
     var clockFace = box(0.16,0.07,0.005, clockGlowMat);
-    clockFace.position.set(0,0.6,0.061);
+    clockFace.position.set(0,0.64,0.061);
     clockG.add(clockFace);
     glowRefs.clockMat = clockGlowMat;
   }
@@ -1163,7 +1308,7 @@
     currentRoomIndex = idx;
     var r = ROOM_DEFS[idx];
     camGoal.set(r.cx, 1.0, r.cz);
-    thetaGoal = 0.7; phiGoal = 1.15; radiusGoal = 8.5;
+    thetaGoal = r.camTheta; phiGoal = 1.15; radiusGoal = 8.5;
     if(instant){ camTarget.copy(camGoal); theta=thetaGoal; phi=phiGoal; radius=radiusGoal; }
     updateTabs();
   }
@@ -1199,7 +1344,21 @@
     raycaster.setFromCamera(mouseV, camera);
     var hits = raycaster.intersectObjects(pickables);
     if(hits.length){
-      var id = hits[0].object.parent === houseGroup ? findIdByHit(hits[0].object) : null;
+      // Some items intentionally sit inside a bigger item's hit box (pillow and
+      // blanket on the bed, clock on the nightstand, curtain on the shower).
+      // The ray enters the big box first, so plain nearest-hit would make the
+      // small item unclickable. Among hits close to the nearest one, prefer
+      // the smallest box: aiming at the pillow picks the pillow, aiming at the
+      // rest of the bed still picks the bed.
+      var nearest = hits[0].distance;
+      var best = hits[0].object, bestVol = Infinity;
+      hits.forEach(function(h){
+        if(h.distance > nearest + 1.2) return;
+        var p = h.object.geometry.parameters;
+        var vol = p.width * p.height * p.depth;
+        if(vol < bestVol){ bestVol = vol; best = h.object; }
+      });
+      var id = findIdByHit(best);
       if(id) openQuiz(id);
     }
   }
@@ -1358,27 +1517,40 @@
 
   function openQuiz(id){
     var st = itemState[id];
-    if(!st || st.solved) return;
+    if(!st) return;
     quizOpen = true;
     activeItemId = id;
-    setHighlight(id, 'active');
-    questionEl.textContent = '\u2018' + capitalize(st.def.en) + '\u2019 in Spanish?';
-    var distractors = shuffle(ALL_ES_WORDS.filter(function(w){ return w !== st.def.es; })).slice(0,3);
-    var options = shuffle([st.def.es].concat(distractors));
     optionsEl.innerHTML = '';
     feedbackEl.textContent = '';
     feedbackEl.className = '';
-    options.forEach(function(opt){
-      var b = document.createElement('button');
-      b.className = 'opt-btn';
-      b.textContent = capitalize(opt);
-      b.addEventListener('click', function(){ handleAnswer(opt, b); });
-      optionsEl.appendChild(b);
-    });
+    questionEl.textContent = '\u2018' + st.def.en + '\u2019 en espa\u00f1ol?';
+
+    if(st.solved){
+      // review mode: already-learned items can be revisited to hear the word again
+      setHighlight(id, 'solved');
+      var replayBtn = document.createElement('button');
+      replayBtn.className = 'opt-btn correct';
+      replayBtn.style.gridColumn = '1 / -1';
+      replayBtn.textContent = '\ud83d\udd0a ' + st.def.es;
+      replayBtn.addEventListener('click', function(){ speakSpanish(st.def.es); });
+      optionsEl.appendChild(replayBtn);
+      feedbackEl.textContent = '\u00a1Ya aprendiste esta palabra! \u2018' + st.def.en + '\u2019 = ' + st.def.es + '. Toca el bot\u00f3n para escucharla otra vez.';
+      feedbackEl.className = 'ok';
+      speakSpanish(st.def.es);
+    } else {
+      setHighlight(id, 'active');
+      var distractors = shuffle(ALL_ES_WORDS.filter(function(w){ return w !== st.def.es; })).slice(0,3);
+      var options = shuffle([st.def.es].concat(distractors));
+      options.forEach(function(opt){
+        var b = document.createElement('button');
+        b.className = 'opt-btn';
+        b.textContent = opt;
+        b.addEventListener('click', function(){ handleAnswer(opt, b); });
+        optionsEl.appendChild(b);
+      });
+    }
     overlay.classList.add('show');
   }
-
-  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
   /* ---------------- session score tracking (for teacher export) ---------------- */
   var session = {
@@ -1534,7 +1706,7 @@
       recordAttempt(activeItemId, true);
       xapiAnswered(st.def, true, opt);
       btnEl.classList.add('correct');
-      feedbackEl.textContent = '\u00a1Correcto! ("'+capitalize(st.def.es)+'")';
+      feedbackEl.textContent = '\u00a1Correcto! \u2018' + st.def.en + '\u2019 = ' + st.def.es + '.';
       feedbackEl.className = 'ok';
       st.solved = true;
       setHighlight(activeItemId, 'solved');
@@ -1546,8 +1718,11 @@
       recordAttempt(activeItemId, false);
       xapiAnswered(st.def, false, opt);
       btnEl.classList.add('wrong');
-      feedbackEl.textContent = 'Not quite \u2014 try again.';
+      // say the word they actually chose, and explain what it really means,
+      // so wrong answers still build vocabulary instead of dead-ending
+      feedbackEl.textContent = 'No \u2014 \u2018' + opt + '\u2019 significa \u2018' + (ES_TO_EN[opt] || opt) + '\u2019. Int\u00e9ntalo otra vez.';
       feedbackEl.className = 'bad';
+      speakSpanish(opt);
       cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake');
       setHighlight(activeItemId, 'wrong');
       setTimeout(function(){ setHighlight(activeItemId, 'active'); }, 300);
@@ -1722,10 +1897,14 @@
   function onResize(){
     var w = holder.clientWidth, h = holder.clientHeight;
     camera.aspect = w/h;
+    // widen the view on portrait phones so a whole room fits on screen and
+    // items can't hide just outside the edges while the player spins in place
+    camera.fov = (camera.aspect < 0.8) ? 68 : 52;
     camera.updateProjectionMatrix();
     renderer.setSize(w,h);
   }
   window.addEventListener('resize', onResize);
+  onResize();
 
   setRoom(0, true);
 
