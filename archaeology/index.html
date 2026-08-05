@@ -136,7 +136,12 @@
 <dialog id="onboardingOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Getting around the site</h2>
-    <div id="onboardingSteps" class="stepList"></div>
+    <div id="onboardingSteps" class="stepList">
+      <div class="stepItem"><div class="stepNumber">1</div><div><strong>Look around</strong><p>Drag with the mouse, use the left and right arrow keys, or click once to lock the cursor for free look.</p></div></div>
+      <div class="stepItem"><div class="stepNumber">2</div><div><strong>Move</strong><p>W and S, or up and down arrows, to move forward and back. A and D to step sideways.</p></div></div>
+      <div class="stepItem"><div class="stepNumber">3</div><div><strong>Interact</strong><p>Click a highlighted object, or press E, Enter or Space when its label appears.</p></div></div>
+      <div class="stepItem"><div class="stepNumber">4</div><div><strong>Stay oriented</strong><p>The objective button at the lower left always opens whatever you need to do next. Press R to face it.</p></div></div>
+    </div>
     <p>Your first task is the field kit. It opens next.</p>
     <div class="actionRow"><button type="button" class="btn primary" id="onboardingContinueBtn">Build my field kit</button></div>
   </div>
@@ -343,7 +348,20 @@
 <dialog id="helpOverlay" class="panelOverlay">
   <div class="panelCard narrow">
     <h2>Controls</h2>
-    <div id="helpBody"></div>
+    <div id="helpBody">
+      <ul class="helpList">
+        <li>Move: W A S D, or the arrow keys.</li>
+        <li>Look: drag the mouse, or click once to lock the cursor. Left and right arrows turn.</li>
+        <li>Interact: press E, Enter or Space while an object is highlighted, or click it.</li>
+        <li>Face the objective: press R.</li>
+        <li>Open the objective task directly: the button at the lower left.</li>
+        <li>Notebook: N. Evidence Room: V. Settings: comma. Report: P.</li>
+        <li>Escape closes an optional panel, then releases the mouse cursor.</li>
+        <li>On a touch screen, use the left stick to move, drag the right of the screen to look, and tap Interact.</li>
+        <li>Guided Accessible Mode: turn it on in Settings for a full keyboard and screen-reader version with no 3D graphics. Every activity, decision and record is identical, and you can switch modes at any time without losing progress.</li>
+        <li>In virtual reality: the trigger selects what the ray points at, push the right stick left or right to snap-turn, push it forward and release to teleport, and the menu on your left wrist opens the objective, notebook, evidence and settings. Smooth movement is off by default and can be turned on in Settings.</li>
+      </ul>
+    </div>
     <div class="actionRow"><button type="button" class="btn secondary" id="closeHelpBtn">Close</button></div>
   </div>
 </dialog>

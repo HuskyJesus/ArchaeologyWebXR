@@ -8,7 +8,7 @@ import { state, setSetting, addNote } from './core/state.js';
 import { hasSave, loadSave, saveSummary, enableAutosave, flushSave, loadSettings, clearSave, canPersist } from './core/save.js';
 import { startSession, resumeSession, record, recordOnce } from './core/telemetry.js';
 import { on, EVENTS } from './core/events.js';
-import { OPENING_BRIEFING, ONBOARDING_STEPS, HELP_TEXT, STATIONS } from './data/text.js';
+import { OPENING_BRIEFING, STATIONS } from './data/text.js';
 import { SITE } from './data/site.js';
 
 import { initRenderer, webglAvailable, scene, camera, renderer } from './scene/renderer.js';
@@ -337,15 +337,7 @@ function resumeMessage() {
 /* ---------- onboarding ---------- */
 
 function showOnboarding() {
-  const host = byId('onboardingSteps');
-  clear(host);
-  ONBOARDING_STEPS.forEach((step, index) => {
-    host.appendChild(el('div', { class: 'stepItem' },
-      el('div', { class: 'stepNumber' }, String(index + 1)),
-      el('div', {},
-        el('strong', {}, step.title),
-        el('p', {}, step.body))));
-  });
+  // the step list is static markup in index.html
   modal.open({ id: 'onboardingOverlay', dismissible: false, initialFocus: '#onboardingContinueBtn' });
   byId('onboardingContinueBtn').onclick = () => {
     state.progress.onboarded = true;
@@ -355,11 +347,7 @@ function showOnboarding() {
 }
 
 function buildHelpPanel() {
-  const host = byId('helpBody');
-  clear(host);
-  const list = el('ul', { class: 'helpList' });
-  HELP_TEXT.forEach((line) => list.appendChild(el('li', {}, line)));
-  host.appendChild(list);
+  // the controls list is static markup in index.html; only the wiring lives here
   byId('helpBtn').addEventListener('click', () => modal.open({ id: 'helpOverlay', dismissible: true }));
   byId('fallbackHelpBtn').addEventListener('click', () => modal.open({ id: 'helpOverlay', dismissible: true }));
   byId('closeHelpBtn').addEventListener('click', () => modal.close('helpOverlay'));

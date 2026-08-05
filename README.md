@@ -18,7 +18,7 @@ WebXR is a progressive enhancement throughout. Every experience is fully usable 
 UCFWebXR/
   index.html          Landing page (plain HTML and CSS, no JavaScript)
   styles/landing.css  Landing page styles
-  archaeology/        Redstone Bluff (modular: src/, styles/, tests/, vendor/, serve.py, docs)
+  archaeology/        Redstone Bluff (modular: src/, styles/, tests/, vendor/, docs)
   crime-alley/        Case File: Marlowe Alley (single-file experience)
   spanish-home/       La Casa Interactiva (single-file experience)
   README.md
@@ -44,8 +44,6 @@ Then open http://localhost:8000/ for the landing page, or go straight to a proje
 - http://localhost:8000/archaeology/
 - http://localhost:8000/crime-alley/
 - http://localhost:8000/spanish-home/
-
-The archaeology project also ships its own dev server (`python3 archaeology/serve.py`) that serves only that project.
 
 Note: Crime Alley and the Spanish Home load Three.js from a CDN, and the Spanish Home loads Google Fonts, so those two need an internet connection. The archaeology project vendors its own copy of Three.js and runs fully offline.
 

@@ -52,13 +52,6 @@ We will also be consulting with descendant communities as this work proceeds. Th
 
 Start by building your field kit. What you take with you determines what you are able to do for the rest of the project.`;
 
-export const ONBOARDING_STEPS = [
-  { title: 'Look around', body: 'Drag with the mouse, use the left and right arrow keys, or click once to lock the cursor for free look.' },
-  { title: 'Move', body: 'W and S, or up and down arrows, to move forward and back. A and D to step sideways.' },
-  { title: 'Interact', body: 'Click a highlighted object, or press E, Enter or Space when its label appears.' },
-  { title: 'Stay oriented', body: 'The objective button at the lower left always opens whatever you need to do next. Press R to face it.' }
-];
-
 export const REPORT_QUESTIONS = [
   {
     id: 'activities',
@@ -123,15 +116,4 @@ export const ASSESSMENT_DIMENSIONS = [
   { id: 'evidenceSynthesis', label: 'Evidence synthesis' }
 ];
 
-export const HELP_TEXT = [
-  'Move: W A S D, or the arrow keys.',
-  'Look: drag the mouse, or click once to lock the cursor. Left and right arrows turn.',
-  'Interact: press E, Enter or Space while an object is highlighted, or click it.',
-  'Face the objective: press R.',
-  'Open the objective task directly: the button at the lower left.',
-  'Notebook: N. Evidence Room: V. Settings: comma. Report: P.',
-  'Escape closes an optional panel, then releases the mouse cursor.',
-  'On a touch screen, use the left stick to move, drag the right of the screen to look, and tap Interact.',
-  'Guided Accessible Mode: turn it on in Settings for a full keyboard and screen-reader version with no 3D graphics. Every activity, decision and record is identical, and you can switch modes at any time without losing progress.',
-  'In virtual reality: the trigger selects what the ray points at, push the right stick left or right to snap-turn, push it forward and release to teleport, and the menu on your left wrist opens the objective, notebook, evidence and settings. Smooth movement is off by default and can be turned on in Settings.'
-];
+// (the onboarding steps and the controls list are static markup in index.html)
