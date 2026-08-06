@@ -9,7 +9,7 @@ import { CONFIDENCE_LEVELS } from '../../data/artifacts.js';
 import { state, setReportAnswer, setReportOpen, submitReport, daysUsed } from '../../core/state.js';
 import { citableEvidence, reportRequirements, reportAnswerStatus, evidenceById } from '../../core/evidence.js';
 import { assessmentProfile, investigationSummary, BANDS } from '../../core/assessment.js';
-import { record, recordOnce, toCSV, toXAPI, timeOnTaskMs, formatDuration } from '../../core/telemetry.js';
+import { record, recordOnce, toCSV, toXAPI, timeOnTaskMs, formatDuration, events } from '../../core/telemetry.js';
 import * as modal from '../modal.js';
 import { toast } from '../toast.js';
 import { button, actionRow, sectionHeading, emptyState, optionGroup } from '../components.js';
@@ -270,6 +270,122 @@ export function buildReportText() {
   return lines.join('\n');
 }
 
+/* ---------- readable HTML report ----------
+   A single self-contained web page an instructor can open, print, or upload
+   straight into an LMS such as Canvas. Same content as the plain-text report
+   plus the full activity timeline, formatted for reading rather than parsing. */
+
+function escHTML(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function eventDetail(e) {
+  return Object.keys(e)
+    .filter((k) => !['objectId', 'verb', 'atISO', 'elapsedMs', 'kind', 'name'].includes(k))
+    .map((k) => `${k}: ${Array.isArray(e[k]) ? e[k].join(', ') : e[k]}`)
+    .join('; ');
+}
+
+export function buildReportHTML() {
+  const summary = investigationSummary();
+  const profile = assessmentProfile();
+  const bandTone = (b) => (b === BANDS.strong ? '#2e7d32'
+    : (b === BANDS.developing ? '#9a6b00'
+      : (b === BANDS.notAttempted ? '#666666' : '#b3452f')));
+  const h = [];
+  h.push('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">');
+  h.push(`<title>${escHTML(SITE.siteName)} report - ${escHTML(state.studentName || 'Unnamed investigator')}</title>`);
+  h.push('<style>');
+  h.push('body{font-family:Georgia,"Times New Roman",serif;max-width:52rem;margin:2rem auto;padding:0 1rem;color:#26221b;line-height:1.55;}');
+  h.push('h1{font-size:1.6rem;border-bottom:3px solid #c08a4a;padding-bottom:.4rem;}h2{font-size:1.15rem;margin-top:2rem;border-bottom:1px solid #ddd2b6;padding-bottom:.2rem;}');
+  h.push('table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.92rem;}th,td{border:1px solid #d8cfae;padding:.35rem .6rem;text-align:left;vertical-align:top;}th{background:#f3ecd8;}');
+  h.push('.meta{color:#5f5645;font-size:.9rem;}.band{font-weight:bold;}');
+  h.push('.q{margin:1.1rem 0;padding:.75rem .9rem;background:#faf6ea;border:1px solid #e4dabb;border-radius:6px;}');
+  h.push('.q h3{margin:.1rem 0 .4rem;font-size:1rem;}.q .lbl{font-weight:bold;color:#5f5645;}');
+  h.push('.timeline td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums;}');
+  h.push('@media print{body{margin:.5rem auto;} .q{break-inside:avoid;}}');
+  h.push('</style></head><body>');
+
+  h.push(`<h1>${escHTML(SITE.siteName)} Archaeological Investigation</h1>`);
+  h.push(`<p class="meta">Investigator: <strong>${escHTML(state.studentName || 'Unnamed investigator')}</strong><br>`);
+  h.push(`Report generated: ${escHTML(new Date().toLocaleString())}<br>`);
+  h.push(`Time on task: ${escHTML(formatDuration(timeOnTaskMs()))}</p>`);
+
+  h.push('<h2>Investigation summary</h2><table>');
+  const overrun = state.daysOverrun ? ` (schedule exceeded by ${state.daysOverrun})` : '';
+  [
+    ['Project days used', `${daysUsed()} of ${SITE.totalDays}${overrun}`],
+    ['Units opened', state.units.opened.join(', ') || 'none'],
+    ['Finds recovered', `${summary.artifacts} (${summary.artifactsAnalysed} analysed)`],
+    ['Finds lost or never recovered', String(summary.missed)],
+    ['Features recorded', `${summary.featuresComplete} complete of ${summary.features} exposed`],
+    ['Dating samples', String(summary.samples)],
+    ['Professional decisions resolved', String(summary.ethicsResolved)]
+  ].forEach(([k, v]) => h.push(`<tr><th>${escHTML(k)}</th><td>${escHTML(v)}</td></tr>`));
+  h.push('</table>');
+
+  h.push('<h2>Performance profile</h2><table>');
+  h.push('<tr><th>Dimension</th><th>Band</th><th>Detail</th></tr>');
+  profile.forEach((dim) => {
+    h.push(`<tr><td>${escHTML(dim.label)}</td><td class="band" style="color:${bandTone(dim.band)}">${escHTML(dim.band)}</td><td>${escHTML(dim.detail)}</td></tr>`);
+  });
+  h.push('</table>');
+
+  h.push('<h2>Conclusions</h2>');
+  REPORT_QUESTIONS.forEach((q) => {
+    const a = state.report.answers[q.id];
+    h.push('<div class="q">');
+    h.push(`<h3>${q.number}. ${escHTML(q.prompt)}</h3>`);
+    if (!a || !a.claim) {
+      h.push('<p>Not answered.</p></div>');
+      return;
+    }
+    const cited = (a.evidence || []).map((id) => {
+      const e = evidenceById(id);
+      return e ? `${e.label} [${e.quality} quality]` : id;
+    });
+    h.push(`<p><span class="lbl">Conclusion:</span> ${escHTML(a.claim.trim())}</p>`);
+    h.push(`<p><span class="lbl">Confidence:</span> ${escHTML(a.confidence || 'not stated')}</p>`);
+    h.push(`<p><span class="lbl">Evidence cited:</span> ${cited.length ? escHTML(cited.join('; ')) : 'none'}</p>`);
+    h.push(`<p><span class="lbl">Reasoning:</span> ${escHTML((a.reasoning || '').trim() || 'none given')}</p>`);
+    h.push('</div>');
+  });
+  REPORT_OPEN_FIELDS.forEach((f) => {
+    h.push('<div class="q">');
+    h.push(`<h3>${f.number}. ${escHTML(f.prompt)}</h3>`);
+    h.push(`<p>${escHTML((state.report.open[f.id] || '').trim() || 'Not answered.')}</p>`);
+    h.push('</div>');
+  });
+
+  const selections = [];
+  Object.entries(state.synthesis.selections).forEach(([domainId, statements]) => {
+    Object.entries(statements).forEach(([statementId, payload]) => selections.push({ domainId, statementId, ...payload }));
+  });
+  if (selections.length) {
+    h.push('<h2>Synthesis conclusions</h2><table>');
+    h.push('<tr><th>Domain</th><th>Statement</th><th>Standing</th></tr>');
+    selections.forEach((s) => {
+      const standing = s.support === 'supported' ? 'supported'
+        : (s.acknowledgedSpeculative ? 'speculative, acknowledged' : 'speculative, not acknowledged');
+      h.push(`<tr><td>${escHTML(s.domainId)}</td><td>${escHTML(s.statementId)}</td><td>${escHTML(standing)}</td></tr>`);
+    });
+    h.push('</table>');
+  }
+
+  h.push('<h2>Activity timeline</h2>');
+  h.push('<p class="meta">Every recorded action in the order it happened, with time elapsed since the session began.</p>');
+  h.push('<table class="timeline"><tr><th>Time</th><th>Action</th><th>What</th><th>Detail</th></tr>');
+  events().forEach((e) => {
+    h.push(`<tr><td>${escHTML(formatDuration(e.elapsedMs || 0))}</td><td>${escHTML(e.verb)}</td><td>${escHTML(e.name || e.objectId)}</td><td>${escHTML(eventDetail(e))}</td></tr>`);
+  });
+  h.push('</table>');
+
+  h.push('</body></html>');
+  return h.join('\n');
+}
+
 function download(filename, text, mime) {
   const blob = new Blob([text], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -308,6 +424,10 @@ export function initReport() {
   byId('downloadReportBtn').addEventListener('click', () => {
     download(`redstone-bluff-report-${safeName()}.txt`, buildReportText(), 'text/plain;charset=utf-8;');
     record('export_report', 'completed', { station: 9 });
+  });
+  byId('downloadHtmlBtn').addEventListener('click', () => {
+    download(`redstone-bluff-report-${safeName()}.html`, buildReportHTML(), 'text/html;charset=utf-8;');
+    record('export_report_html', 'completed', { station: 9 });
   });
   byId('copyReportBtn').addEventListener('click', () => copy(buildReportText(), 'Report'));
   byId('copyXapiBtn').addEventListener('click', () => copy(toXAPI(), 'xAPI statements'));

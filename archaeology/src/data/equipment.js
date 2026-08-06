@@ -15,6 +15,7 @@ export const KIT_SECTIONS = [
   { id: 'recording', label: 'Recording', blurb: 'How observations leave the field as a usable record.' },
   { id: 'recovery', label: 'Recovery and storage', blurb: 'How material is caught, contained and labelled.' },
   { id: 'safety', label: 'Safety and site support', blurb: 'Keeping the crew and the deposit intact.' },
+  { id: 'clothing', label: 'Clothing and personal gear', blurb: 'What the crew wears. A site beside live construction has dress rules.' },
   { id: 'staged', label: 'Also loaded on the truck', blurb: 'Items someone added to the trailer. Not all of them belong on this project.' }
 ];
 
@@ -81,7 +82,19 @@ export const EQUIPMENT_ITEMS = [
   { id: 'tarp', label: 'Tarps and site cover', section: 'safety', appropriate: true, capability: 'cover',
     note: 'Protects open units and exposed features overnight and in rain.' },
 
+  // Clothing and personal gear
+  { id: 'boots', label: 'Sturdy work boots', section: 'clothing', appropriate: true, capability: 'footwear',
+    justify: true,
+    note: 'Ankle support and toe protection on broken ground, spoil heaps and open units.' },
+  { id: 'sunhat', label: 'Wide-brim hat and sunscreen', section: 'clothing', appropriate: true, capability: 'sunProtection',
+    note: 'Three weeks of exposed bluff-top fieldwork, most of it in full sun.' },
+  { id: 'hivis', label: 'High-visibility vest', section: 'clothing', appropriate: true, capability: 'visibility',
+    note: 'Required whenever the crew works near the highway corridor and its construction traffic.' },
+  { id: 'raingear', label: 'Rain jacket and spare layers', section: 'clothing', appropriate: true, capability: 'weather',
+    note: 'Field days do not stop for drizzle, and a soaked crew makes poor records.' },
+
   // Staged on the truck: the inappropriate set
+  { id: 'sandals', label: 'Sandals', section: 'staged', appropriate: false, justify: true },
   { id: 'chainsaw', label: 'Chainsaw', section: 'staged', appropriate: false, justify: true },
   { id: 'leafblower', label: 'Leaf blower', section: 'staged', appropriate: false },
   { id: 'pressurewasher', label: 'Pressure washer', section: 'staged', appropriate: false },
@@ -114,7 +127,11 @@ export const CAPABILITY_LABELS = {
   handling: 'safe handling of remains',
   safety: 'crew safety',
   shoring: 'wall stabilisation',
-  cover: 'overnight protection of open contexts'
+  cover: 'overnight protection of open contexts',
+  footwear: 'protected footwear for broken ground',
+  sunProtection: 'sun protection for long field days',
+  visibility: 'high visibility near construction traffic',
+  weather: 'weather protection for the crew'
 };
 
 export const EQUIPMENT_JUSTIFY = {
@@ -164,6 +181,30 @@ export const EQUIPMENT_JUSTIFY = {
         feedback: 'Comfort is not why gloves are in a field kit.' },
       { text: 'To improve grip when pulling artifacts out of the soil', correct: false,
         feedback: 'Artifacts should be exposed and lifted carefully, not pulled. Grip is not the reason.' }
+    ]
+  },
+  boots: {
+    prompt: 'Why do work boots matter on this particular project?',
+    choices: [
+      { text: 'The site is uneven, eroding ground beside active construction: crushed toes and turned ankles end field seasons',
+        correct: true,
+        feedback: 'Right. Site safety rules exist because a single foot injury takes a crew member out for the season, and near plant machinery protective footwear is usually mandatory.' },
+      { text: 'They make it easier to push a shovel in with your foot', correct: false,
+        feedback: 'They do help with that, but comfort of digging is not why footwear is a rule. Protection is.' },
+      { text: 'They keep your feet warm in the morning', correct: false,
+        feedback: 'Warmth is incidental. The reason boots are required is protection on broken ground and around machinery.' }
+    ]
+  },
+  sandals: {
+    prompt: 'Why do the sandals stay on the truck?',
+    choices: [
+      { text: 'Open footwear around sharp tools, spoil heaps and construction traffic is a safety violation on any professional crew',
+        correct: true,
+        feedback: 'Correct. Most permits and contractors require closed protective footwear on site, and a crew chief will send unprotected feet home.' },
+      { text: 'They wear out too quickly in the field', correct: false,
+        feedback: 'Durability is not the issue. Safety is.' },
+      { text: 'They look unprofessional in site photographs', correct: false,
+        feedback: 'Appearance is not the issue. Open footwear is a safety violation near tools and machinery.' }
     ]
   },
   chainsaw: {

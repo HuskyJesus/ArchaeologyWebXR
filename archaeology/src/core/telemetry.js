@@ -8,6 +8,8 @@
 
 import { state, awardOnce, hasAwarded } from './state.js';
 import { csvCell } from './dom.js';
+import { on, EVENTS } from './events.js';
+import { STATIONS } from '../data/text.js';
 
 const VERB_IRIS = {
   selected: 'http://id.tincanapi.com/verb/selected',
@@ -28,7 +30,7 @@ const VERB_IRIS = {
 const EXTENSION_KEYS = [
   'correct', 'verdict', 'provenience', 'confidence', 'documented', 'soundness', 'included',
   'classification', 'quality', 'unit', 'level', 'station', 'support', 'reliable', 'days',
-  'field', 'answer', 'claimCount', 'evidenceCount', 'reason'
+  'field', 'answer', 'claimCount', 'evidenceCount', 'reason', 'kind', 'name'
 ];
 
 let sessionStartMs = null;
@@ -70,6 +72,39 @@ export function alreadyRecorded(key) {
 export function events() {
   return state.telemetry;
 }
+
+/* ---------- interaction timeline ----------
+   Beyond graded decisions, the record captures the ORDER in which the learner
+   moved through the investigation: every panel they opened, every station
+   they reached, and VR entry and exit. Together with the per-event elapsed
+   time this makes the exported record a full activity timeline rather than a
+   list of completed things.
+
+   panelOpened re-fires for the panel underneath when one closes (the XR
+   mirror needs that), so opens are de-duplicated against the set of panels
+   currently open. */
+const openPanelIds = new Set();
+
+on(EVENTS.panelOpened, (entry) => {
+  if (!entry || !entry.id || openPanelIds.has(entry.id)) return;
+  openPanelIds.add(entry.id);
+  record(entry.id, 'opened', { kind: 'panel' });
+});
+
+on(EVENTS.panelClosed, (entry) => {
+  if (entry && entry.id) openPanelIds.delete(entry.id);
+});
+
+let lastRecordedStation = null;
+on(EVENTS.stationChanged, (n) => {
+  if (n === lastRecordedStation) return;
+  lastRecordedStation = n;
+  const s = STATIONS.find((x) => x.number === n);
+  record(`station_${n}`, 'opened', { kind: 'station', station: n, name: s ? s.name : String(n) });
+});
+
+on(EVENTS.xrSessionStart, () => record('vr_session', 'opened', { kind: 'mode' }));
+on(EVENTS.xrSessionEnd, () => record('vr_session', 'completed', { kind: 'mode' }));
 
 export function timeOnTaskMs() {
   if (!state.telemetry.length) return 0;
